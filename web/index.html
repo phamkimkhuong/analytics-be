@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phân tích API Backend</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div>
+            <h1>Phân tích API</h1>
+            <p>So sánh contract backend</p>
+          </div>
+          <button class="icon-button" id="refreshButton" title="Tải lại báo cáo" type="button">↻</button>
+        </div>
+
+        <div class="sidebar-section">
+          <label class="field-label" for="reportSearch">Báo cáo so sánh</label>
+          <input id="reportSearch" class="input" type="search" autocomplete="off" placeholder="Tìm báo cáo" />
+        </div>
+
+        <div class="report-list" id="reportList"></div>
+
+        <div class="snapshot-panel">
+          <div class="panel-title">Bản chụp OpenAPI</div>
+          <div id="snapshotList" class="snapshot-list"></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="topbar">
+          <div>
+            <div class="eyebrow" id="reportGenerated">Chưa chọn báo cáo</div>
+            <h2 id="reportTitle">Chọn một báo cáo so sánh</h2>
+          </div>
+          <div class="hash-pair">
+            <span id="fromHash">bản cũ: -</span>
+            <span id="toHash">bản mới: -</span>
+          </div>
+        </section>
+
+        <section class="verdict" id="verdictPanel"></section>
+
+        <section class="metric-grid" id="metricGrid"></section>
+
+        <section class="content-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h3>Nhóm bị ảnh hưởng</h3>
+              <span id="groupCount" class="muted"></span>
+            </div>
+            <div id="groupList" class="group-list"></div>
+          </div>
+
+          <div class="panel filters-panel">
+            <div class="panel-header">
+              <h3>Lọc thay đổi</h3>
+              <button class="text-button" id="clearFiltersButton" type="button">Xóa lọc</button>
+            </div>
+            <div class="filters">
+              <label class="field-label" for="severityFilter">Mức ảnh hưởng</label>
+              <select id="severityFilter" class="input">
+                <option value="">Tất cả mức</option>
+                <option value="BREAKING">Nguy cơ vỡ app</option>
+                <option value="REVIEW_REQUIRED">Cần rà soát</option>
+                <option value="NON_BREAKING">Thường an toàn</option>
+                <option value="DOC_ONLY">Chỉ tài liệu</option>
+              </select>
+
+              <label class="field-label" for="groupFilter">Nhóm</label>
+              <select id="groupFilter" class="input">
+                <option value="">Tất cả nhóm</option>
+              </select>
+
+              <label class="field-label" for="changeSearch">Tìm kiếm</label>
+              <input id="changeSearch" class="input" type="search" autocomplete="off" placeholder="Endpoint, schema, field" />
+            </div>
+          </div>
+        </section>
+
+        <section class="panel changes-panel">
+            <div class="panel-header">
+            <h3>Chi tiết thay đổi</h3>
+            <span id="changeCount" class="muted"></span>
+          </div>
+          <div id="changeList" class="change-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

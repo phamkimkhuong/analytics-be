@@ -11,6 +11,8 @@
     "diff": "node dist/cli.js diff",
     "precli": "npm run build --silent",
     "cli": "node dist/cli.js",
+    "preweb": "npm run build --silent",
+    "web": "node dist/web/server.js",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json"
   },

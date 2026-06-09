@@ -1,0 +1,224 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { basename, dirname, extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const WEB_DIR = resolve(ROOT_DIR, "web");
+const REPORTS_DIR = resolve(ROOT_DIR, "reports");
+const SNAPSHOTS_DIR = resolve(ROOT_DIR, "snapshots");
+const DEFAULT_PORT = 4627;
+
+interface ReportSummary {
+  file: string;
+  generated_at?: string;
+  from?: string;
+  to?: string;
+  total_changes?: number;
+  breaking?: number;
+  review_required?: number;
+  non_breaking?: number;
+  doc_only?: number;
+  contract_changed?: boolean;
+  raw_changed?: boolean;
+}
+
+interface SnapshotSummary {
+  id: string;
+  fetched_at?: string;
+  title?: unknown;
+  path_count?: unknown;
+  operation_count?: unknown;
+  schema_count?: unknown;
+  tag_count?: unknown;
+  contract_sha256?: unknown;
+}
+
+function parsePort(): number {
+  const index = process.argv.indexOf("--port");
+  const value = index >= 0 ? process.argv[index + 1] : process.env.PORT;
+  const port = Number(value ?? DEFAULT_PORT);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    throw new Error(`Invalid port: ${value}`);
+  }
+  return port;
+}
+
+function sendJson(response: ServerResponse, statusCode: number, value: unknown): void {
+  response.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
+  response.end(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+function sendText(response: ServerResponse, statusCode: number, text: string): void {
+  response.writeHead(statusCode, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
+  response.end(text);
+}
+
+function contentType(path: string): string {
+  switch (extname(path).toLowerCase()) {
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".js":
+      return "text/javascript; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function safeJoin(baseDir: string, requestedPath: string): string | undefined {
+  const resolved = resolve(baseDir, requestedPath);
+  return resolved.startsWith(baseDir) ? resolved : undefined;
+}
+
+async function readJson(path: string): Promise<unknown> {
+  return JSON.parse(await readFile(path, "utf8"));
+}
+
+function toReportSummary(file: string, report: any): ReportSummary {
+  return {
+    file,
+    generated_at: report?.generated_at,
+    from: report?.from?.id,
+    to: report?.to?.id,
+    total_changes: report?.summary?.total_changes,
+    breaking: report?.summary?.by_severity?.BREAKING,
+    review_required: report?.summary?.by_severity?.REVIEW_REQUIRED,
+    non_breaking: report?.summary?.by_severity?.NON_BREAKING,
+    doc_only: report?.summary?.by_severity?.DOC_ONLY,
+    contract_changed: report?.summary?.contract_changed,
+    raw_changed: report?.summary?.raw_changed,
+  };
+}
+
+async function listReports(): Promise<ReportSummary[]> {
+  const entries = await readdir(REPORTS_DIR, { withFileTypes: true }).catch(() => []);
+  const jsonFiles = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => entry.name)
+    .sort((left, right) => right.localeCompare(left));
+
+  const reports: ReportSummary[] = [];
+  for (const file of jsonFiles) {
+    try {
+      reports.push(toReportSummary(file, await readJson(join(REPORTS_DIR, file))));
+    } catch {
+      reports.push({ file });
+    }
+  }
+  return reports;
+}
+
+async function listSnapshots(): Promise<SnapshotSummary[]> {
+  const entries = await readdir(SNAPSHOTS_DIR, { withFileTypes: true }).catch(() => []);
+  const snapshots: SnapshotSummary[] = [];
+
+  for (const entry of entries.filter((item) => item.isDirectory()).sort((left, right) => right.name.localeCompare(left.name))) {
+    const manifestPath = join(SNAPSHOTS_DIR, entry.name, "manifest.json");
+    try {
+      const manifest: any = await readJson(manifestPath);
+      snapshots.push({
+        id: entry.name,
+        fetched_at: manifest?.fetched_at,
+        title: manifest?.openapi?.title,
+        path_count: manifest?.openapi?.path_count,
+        operation_count: manifest?.openapi?.operation_count,
+        schema_count: manifest?.openapi?.schema_count,
+        tag_count: manifest?.openapi?.tag_count,
+        contract_sha256: manifest?.checksums?.contract_sha256,
+      });
+    } catch {
+      snapshots.push({ id: entry.name });
+    }
+  }
+
+  return snapshots;
+}
+
+async function handleApi(pathname: string, response: ServerResponse): Promise<void> {
+  if (pathname === "/api/health") {
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
+  if (pathname === "/api/reports") {
+    sendJson(response, 200, await listReports());
+    return;
+  }
+
+  if (pathname.startsWith("/api/reports/")) {
+    const file = basename(decodeURIComponent(pathname.slice("/api/reports/".length)));
+    if (!file.endsWith(".json")) {
+      sendJson(response, 400, { error: "Report file must be a .json file." });
+      return;
+    }
+    const reportPath = safeJoin(REPORTS_DIR, file);
+    if (!reportPath) {
+      sendJson(response, 400, { error: "Invalid report path." });
+      return;
+    }
+    sendJson(response, 200, await readJson(reportPath));
+    return;
+  }
+
+  if (pathname === "/api/snapshots") {
+    sendJson(response, 200, await listSnapshots());
+    return;
+  }
+
+  sendJson(response, 404, { error: "API route not found." });
+}
+
+async function serveStatic(pathname: string, response: ServerResponse): Promise<void> {
+  const filePath = pathname === "/" ? join(WEB_DIR, "index.html") : safeJoin(WEB_DIR, decodeURIComponent(pathname.slice(1)));
+  if (!filePath) {
+    sendText(response, 403, "Forbidden");
+    return;
+  }
+
+  const fileStat = await stat(filePath).catch(() => undefined);
+  if (!fileStat || !fileStat.isFile()) {
+    sendText(response, 404, "Not found");
+    return;
+  }
+
+  response.writeHead(200, {
+    "Content-Type": contentType(filePath),
+    "Cache-Control": "no-store",
+  });
+  response.end(await readFile(filePath));
+}
+
+async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  try {
+    const url = new URL(request.url ?? "/", "http://localhost");
+    if (url.pathname.startsWith("/api/")) {
+      await handleApi(url.pathname, response);
+      return;
+    }
+    await serveStatic(url.pathname, response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sendJson(response, 500, { error: message });
+  }
+}
+
+const port = parsePort();
+const server = createServer((request, response) => {
+  void handleRequest(request, response);
+});
+
+server.listen(port, "127.0.0.1", () => {
+  console.log(`Analytics BE UI: http://127.0.0.1:${port}`);
+});
