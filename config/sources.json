@@ -1,0 +1,10 @@
+{
+  "default": "calatha_staging",
+  "sources": {
+    "calatha_staging": {
+      "name": "Calatha Backend Staging",
+      "openapi_url": "https://api.calatha.com/v3/api-docs",
+      "swagger_ui_url": "https://api.calatha.com/swagger-ui/index.html"
+    }
+  }
+}

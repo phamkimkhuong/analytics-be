@@ -1,0 +1,24 @@
+{
+  "name": "analytics-be",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI for snapshotting and analyzing Calatha backend OpenAPI contracts.",
+  "scripts": {
+    "presnapshot": "npm run build --silent",
+    "snapshot": "node dist/cli.js snapshot",
+    "prediff": "npm run build --silent",
+    "diff": "node dist/cli.js diff",
+    "precli": "npm run build --silent",
+    "cli": "node dist/cli.js",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "typescript": "^6.0.3"
+  }
+}
