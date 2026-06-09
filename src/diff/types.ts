@@ -11,6 +11,22 @@ export type ChangeKind =
   | "schema_changed"
   | "raw_only_changed";
 
+export type SchemaFieldChangeKind =
+  | "property_added"
+  | "property_removed"
+  | "required_added"
+  | "required_removed"
+  | "type_changed"
+  | "format_changed"
+  | "ref_changed"
+  | "enum_added"
+  | "enum_removed"
+  | "constraint_changed"
+  | "composition_changed"
+  | "items_changed"
+  | "additional_properties_changed"
+  | "value_changed";
+
 export interface OperationContract {
   key: string;
   method: string;
@@ -51,8 +67,25 @@ export interface DiffChange {
   method?: string;
   path?: string;
   tags?: string[];
+  groups?: string[];
   title: string;
   details: string[];
+  schema_changes?: SchemaFieldChange[];
+}
+
+export interface SchemaFieldChange {
+  kind: SchemaFieldChangeKind;
+  severity: Severity;
+  path: string;
+  message: string;
+  before?: unknown;
+  after?: unknown;
+}
+
+export interface GroupSummary {
+  total_changes: number;
+  by_severity: Record<Severity, number>;
+  by_kind: Record<ChangeKind, number>;
 }
 
 export interface DiffSummary {
@@ -61,6 +94,7 @@ export interface DiffSummary {
   raw_changed: boolean;
   by_severity: Record<Severity, number>;
   by_kind: Record<ChangeKind, number>;
+  by_group: Record<string, GroupSummary>;
   operations: {
     added: number;
     removed: number;

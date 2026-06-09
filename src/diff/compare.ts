@@ -1,15 +1,11 @@
-import { sha256 } from "../hash.js";
 import { stableJsonString } from "../json.js";
 import { formatVietnamIso } from "../time.js";
+import { describeDetailedSchemaChange } from "./schema.js";
 import { maxSeverity } from "./severity.js";
 import type { DiffChange, DiffReport, DiffSummary, OperationContract, SchemaContract, Severity, SnapshotForDiff } from "./types.js";
 
 function sameJson(left: unknown, right: unknown): boolean {
   return stableJsonString(left) === stableJsonString(right);
-}
-
-function hashJson(value: unknown): string {
-  return sha256(stableJsonString(value));
 }
 
 function changeId(kind: string, key: string): string {
@@ -282,15 +278,7 @@ function compareSchemas(from: SnapshotForDiff, to: SnapshotForDiff): DiffChange[
 }
 
 function describeSchemaChange(name: string, before: SchemaContract, after: SchemaContract): DiffChange {
-  return {
-    id: changeId("schema_changed", name),
-    kind: "schema_changed",
-    severity: "REVIEW_REQUIRED",
-    subject: "schema",
-    key: name,
-    title: `Schema ${name} changed`,
-    details: [`Schema contract hash changed: ${before.contractHash.slice(0, 12)} -> ${after.contractHash.slice(0, 12)}.`],
-  };
+  return describeDetailedSchemaChange(name, before, after);
 }
 
 function emptySeverityCounts(): Record<Severity, number> {

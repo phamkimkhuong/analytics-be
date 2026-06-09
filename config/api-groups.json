@@ -1,0 +1,270 @@
+{
+  "fallback_group": "Ungrouped",
+  "raw_spec_group": "Spec Metadata",
+  "groups": [
+    {
+      "name": "Buyer App",
+      "tags": [
+        "Public Products",
+        "Buyer Controller",
+        "Buyer Address Controller",
+        "Cart Management V1",
+        "Cart Item Management V1",
+        "Checkout",
+        "Buyer Order Management",
+        "Buyer Voucher",
+        "Buyer Loyalty Management",
+        "Public Campaign",
+        "Public Loyalty",
+        "public-wishlist-controller",
+        "wishlist-controller",
+        "Review Management",
+        "Search Suggestions"
+      ],
+      "path_prefixes": [
+        "/api/v1/buyer",
+        "/api/v1/cart",
+        "/api/v1/cart-items",
+        "/api/v1/checkout",
+        "/api/v1/public",
+        "/api/v1/wishlists",
+        "/api/v2/vouchers"
+      ],
+      "schema_name_patterns": [
+        "Buyer",
+        "Cart",
+        "Checkout",
+        "Wishlist",
+        "Product",
+        "Review",
+        "Campaign",
+        "Voucher"
+      ]
+    },
+    {
+      "name": "Seller App",
+      "tags": [
+        "Shop Controller",
+        "Shop Products",
+        "Shop Order Management",
+        "Shop Campaign",
+        "Shop Address Controller",
+        "Shop Settings",
+        "Shop Public Controller",
+        "Shop Brand Profile Controller",
+        "Shop Legal Controller",
+        "Shop Tax Info Controller",
+        "Shop Loyalty Management",
+        "Shop Product Loyalty",
+        "Shop Review Management",
+        "Shop Appeal Management",
+        "Shop Penalty Management",
+        "Shop - Settlement Periods",
+        "Shop - VAT Invoices",
+        "shop-region-config-controller",
+        "Inventory CRUD",
+        "Inventory Transactions",
+        "Inventory Reporting"
+      ],
+      "path_prefixes": [
+        "/api/v1/shop",
+        "/api/v1/shops",
+        "/api/v1/inventory",
+        "/api/v1/user/products"
+      ],
+      "schema_name_patterns": [
+        "Shop",
+        "Inventory",
+        "Settlement",
+        "Vat",
+        "Tax",
+        "Penalty",
+        "Appeal"
+      ]
+    },
+    {
+      "name": "Admin Console",
+      "tags": [
+        "Admin Campaign",
+        "Admin Products",
+        "Admin Order Management",
+        "Admin Shipping Management",
+        "Admin Buyer Controller",
+        "Admin Review Management",
+        "Admin Loyalty",
+        "Admin Appeal Management",
+        "Admin Penalty Management",
+        "Admin - Cache Management",
+        "Admin - Carrier Ledger",
+        "Admin - Carrier Reconciliation Periods",
+        "Admin - Category Fee Management",
+        "Admin - Shop Category Fee Management",
+        "Admin - Finance Reports",
+        "Admin - Fee Policies",
+        "Admin - Payment Fee Management",
+        "Admin - Service Fee Management",
+        "Admin - Shop Settlement Periods",
+        "Admin - VAT Invoices",
+        "Admin Payment Methods",
+        "admin-wallet-controller",
+        "admin-wallet-withdrawal-config-controller"
+      ],
+      "path_prefixes": [
+        "/api/v1/admin"
+      ],
+      "schema_name_patterns": [
+        "Admin"
+      ]
+    },
+    {
+      "name": "Auth & User",
+      "tags": [
+        "Auth Controller",
+        "User Controller",
+        "Session Controller",
+        "Role Controller",
+        "Permission Controller",
+        "Staff Controller"
+      ],
+      "path_prefixes": [
+        "/api/v1/auth",
+        "/api/v1/users",
+        "/api/v1/sessions",
+        "/api/v1/roles",
+        "/api/v1/permissions",
+        "/api/v1/staff"
+      ],
+      "schema_name_patterns": [
+        "Auth",
+        "User",
+        "Session",
+        "Role",
+        "Permission",
+        "Staff"
+      ]
+    },
+    {
+      "name": "Wallet & Finance",
+      "tags": [
+        "wallet-controller",
+        "admin-wallet-controller",
+        "admin-wallet-withdrawal-config-controller",
+        "payment-controller",
+        "Bank Controller",
+        "Fee Reports",
+        "Admin - Finance Reports",
+        "Admin - Fee Policies",
+        "Admin - Payment Fee Management",
+        "Admin - Service Fee Management",
+        "Admin - Carrier Ledger",
+        "Admin - Carrier Reconciliation Periods",
+        "Shop - Settlement Periods",
+        "Admin - Shop Settlement Periods",
+        "Shop - VAT Invoices",
+        "Admin - VAT Invoices"
+      ],
+      "path_prefixes": [
+        "/api/v1/wallet",
+        "/api/v1/wallets",
+        "/api/v1/payments",
+        "/api/v1/banks",
+        "/api/v1/fees",
+        "/api/v1/settlements"
+      ],
+      "schema_name_patterns": [
+        "Wallet",
+        "Payment",
+        "Bank",
+        "Fee",
+        "Settlement",
+        "Ledger",
+        "Invoice",
+        "Withdrawal"
+      ]
+    },
+    {
+      "name": "Chat & Support",
+      "tags": [
+        "Message Controller",
+        "Chat - Shop",
+        "Chat - Admin",
+        "Chat - Participants",
+        "Conversation Controller",
+        "Customer Support Controller",
+        "Chat - Reports",
+        "Chat - File Upload",
+        "Notification"
+      ],
+      "path_prefixes": [
+        "/api/v1/chat",
+        "/api/v1/messages",
+        "/api/v1/conversations",
+        "/api/v1/notifications",
+        "/api/v1/support"
+      ],
+      "schema_name_patterns": [
+        "Chat",
+        "Message",
+        "Conversation",
+        "Notification",
+        "Support"
+      ]
+    },
+    {
+      "name": "Catalog & Marketing",
+      "tags": [
+        "New Voucher Management",
+        "Voucher Application V2",
+        "Category Management",
+        "Homepage Banner",
+        "Shop Campaign",
+        "Admin Campaign",
+        "Public Campaign",
+        "Public Products",
+        "Admin Products",
+        "Shop Products"
+      ],
+      "path_prefixes": [
+        "/api/v1/categories",
+        "/api/v1/products",
+        "/api/v1/campaigns",
+        "/api/v1/banners",
+        "/api/v2/vouchers"
+      ],
+      "schema_name_patterns": [
+        "Category",
+        "Banner",
+        "Campaign",
+        "Voucher",
+        "Product"
+      ]
+    },
+    {
+      "name": "Storage & Integration",
+      "tags": [
+        "storage-controller",
+        "chunk-upload-controller",
+        "Data Import Address Controller",
+        "webhook-controller",
+        "shipment-controller",
+        "Analytics"
+      ],
+      "path_prefixes": [
+        "/api/v1/storage",
+        "/api/v1/uploads",
+        "/api/v1/webhooks",
+        "/api/v1/shipments",
+        "/api/v1/analytics",
+        "/api/v1/import"
+      ],
+      "schema_name_patterns": [
+        "Storage",
+        "Upload",
+        "Webhook",
+        "Shipment",
+        "Analytics",
+        "Import"
+      ]
+    }
+  ]
+}

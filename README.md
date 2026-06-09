@@ -79,12 +79,23 @@ reports/diff-<from>-to-<to>.md
 Report hiện nhận diện:
 
 - endpoint mới, endpoint bị xóa, endpoint đổi contract;
-- schema mới, schema bị xóa, schema đổi contract;
+- schema mới, schema bị xóa, schema đổi contract ở mức field-level;
 - param thêm/xóa/đổi, đặc biệt param mới `required`;
 - request body thêm/xóa/đổi;
 - response status thêm/xóa/đổi;
 - tag, `operationId`, security đổi;
 - raw Swagger đổi nhưng contract không đổi.
+
+Với schema đổi, report Markdown sẽ liệt kê chi tiết như:
+
+- property thêm/xóa;
+- required field thêm/xóa;
+- type, format, `$ref` đổi;
+- enum value thêm/xóa;
+- constraint đổi như min/max, length, pattern;
+- `items`, `additionalProperties`, `allOf`, `anyOf`, `oneOf` đổi.
+
+Report JSON có thêm `schema_changes` để bước sau map sang source app buyer/seller tự động.
 
 Mức độ ảnh hưởng:
 
