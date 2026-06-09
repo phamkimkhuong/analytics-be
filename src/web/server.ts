@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat, cp, rm, unlink } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSnapshot } from "../snapshot.js";
@@ -207,6 +207,73 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
       file: basename(output.json),
       total_changes: report.summary.total_changes,
     });
+    return;
+  }
+
+  if (request.method === "POST" && pathname === "/api/baseline") {
+    try {
+      const body = await readJsonBody(request);
+      const { snapshot_id } = body;
+      if (!snapshot_id) {
+        sendJson(response, 400, { error: "Missing snapshot_id" });
+        return;
+      }
+      const srcDir = safeJoin(SNAPSHOTS_DIR, snapshot_id);
+      const destDir = join(SNAPSHOTS_DIR, "20260609-ts-contract-baseline");
+      if (!srcDir) {
+        sendJson(response, 400, { error: "Invalid snapshot ID" });
+        return;
+      }
+      await cp(srcDir, destDir, { recursive: true });
+      sendJson(response, 200, { ok: true, message: "Baseline updated successfully" });
+    } catch (err: any) {
+      sendJson(response, 500, { error: err.message });
+    }
+    return;
+  }
+
+  if (request.method === "DELETE" && pathname.startsWith("/api/snapshots/")) {
+    try {
+      const snapshot_id = decodeURIComponent(pathname.slice("/api/snapshots/".length));
+      if (snapshot_id === "20260609-ts-contract-baseline") {
+        sendJson(response, 400, { error: "Cannot delete the baseline snapshot." });
+        return;
+      }
+      const targetDir = safeJoin(SNAPSHOTS_DIR, snapshot_id);
+      if (!targetDir) {
+        sendJson(response, 400, { error: "Invalid snapshot ID" });
+        return;
+      }
+      await rm(targetDir, { recursive: true, force: true });
+      sendJson(response, 200, { ok: true, message: "Snapshot deleted successfully" });
+    } catch (err: any) {
+      sendJson(response, 500, { error: err.message });
+    }
+    return;
+  }
+
+  if (request.method === "DELETE" && pathname.startsWith("/api/reports/")) {
+    try {
+      const file = basename(decodeURIComponent(pathname.slice("/api/reports/".length)));
+      if (!file.endsWith(".json")) {
+        sendJson(response, 400, { error: "Report file must be a .json file." });
+        return;
+      }
+      const jsonPath = safeJoin(REPORTS_DIR, file);
+      if (!jsonPath) {
+        sendJson(response, 400, { error: "Invalid report path." });
+        return;
+      }
+      const mdFile = file.replace(/\.json$/, ".md");
+      const mdPath = join(REPORTS_DIR, mdFile);
+
+      await unlink(jsonPath);
+      await unlink(mdPath).catch(() => undefined);
+
+      sendJson(response, 200, { ok: true, message: "Report deleted successfully" });
+    } catch (err: any) {
+      sendJson(response, 500, { error: err.message });
+    }
     return;
   }
 

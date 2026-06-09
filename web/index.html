@@ -27,9 +27,15 @@
         <div class="compare-panel">
           <div class="panel-title">So sánh mới</div>
           <div class="compare-row">
-            <select id="compareFrom" class="input select-input" title="Bản cũ"></select>
-            <span class="compare-arrow">→</span>
-            <select id="compareTo" class="input select-input" title="Bản mới"></select>
+            <div class="compare-select-wrapper">
+              <span class="field-label-small">Bản cũ (from)</span>
+              <select id="compareFrom" class="input select-input" title="Bản cũ"></select>
+            </div>
+            <span class="compare-arrow">↓</span>
+            <div class="compare-select-wrapper">
+              <span class="field-label-small">Bản mới (to)</span>
+              <select id="compareTo" class="input select-input" title="Bản mới"></select>
+            </div>
           </div>
           <button class="btn-primary" id="runCompareButton" type="button">So sánh ngay</button>
         </div>

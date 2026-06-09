@@ -36,7 +36,7 @@ select {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 380px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -230,19 +230,37 @@ select {
 
 .compare-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compare-select-wrapper {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.field-label-small {
+  color: #aebdd0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .compare-arrow {
   color: #aebdd0;
   font-size: 16px;
+  text-align: center;
+  align-self: center;
+  margin: 2px 0;
 }
 
 .select-input {
   cursor: pointer;
-  padding: 6px 8px;
-  min-height: 34px !important;
+  padding: 8px 10px;
+  min-height: 38px !important;
+  width: 100%;
 }
 
 .select-input option {
@@ -252,7 +270,7 @@ select {
 
 .btn-primary {
   width: 100%;
-  min-height: 36px;
+  min-height: 38px;
   background: var(--blue);
   color: #fff;
   border: none;
@@ -260,6 +278,7 @@ select {
   font-size: 13px;
   font-weight: 650;
   cursor: pointer;
+  margin-top: 6px;
 }
 
 .btn-primary:hover {
@@ -275,7 +294,7 @@ select {
   display: grid;
   gap: 8px;
   margin-top: 10px;
-  max-height: 220px;
+  max-height: 320px;
   overflow: auto;
 }
 
@@ -285,8 +304,37 @@ select {
   padding: 10px;
 }
 
+.snapshot-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.baseline-tag {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.set-baseline-btn {
+  font-size: 11px !important;
+  color: #60a5fa !important;
+  text-decoration: underline;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.set-baseline-btn:hover {
+  color: #93c5fd !important;
+}
+
 .snapshot-item strong {
-  display: block;
   overflow-wrap: anywhere;
   font-size: 12px;
 }
@@ -598,4 +646,54 @@ select {
   .group-row {
     grid-template-columns: 1fr;
   }
+}
+
+.report-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.delete-report-btn {
+  color: #ef4444;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 4px 8px;
+  line-height: 1;
+  margin-top: -4px;
+  margin-right: -4px;
+}
+
+.delete-report-btn:hover {
+  opacity: 1;
+}
+
+.delete-snapshot-btn {
+  font-size: 11px !important;
+  color: #ef4444 !important;
+  text-decoration: underline;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+.delete-snapshot-btn:hover {
+  color: #f87171 !important;
+}
+
+.snapshot-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 11px;
 }

@@ -134,7 +134,10 @@ function renderReports() {
 
         return `
           <button class="report-item ${report.file === state.activeFile ? "active" : ""}" data-report-file="${escapeHtml(report.file)}" type="button">
-            <div class="report-item-title">${escapeHtml(title)}</div>
+            <div class="report-item-header">
+              <div class="report-item-title">${escapeHtml(title)}</div>
+              <span class="delete-report-btn" data-report-file="${escapeHtml(report.file)}" title="Xoá báo cáo">×</span>
+            </div>
             <div class="report-item-meta">${escapeHtml(range)}</div>
             ${badgeHtml ? `<div class="mini-badges">${badgeHtml}</div>` : ""}
           </button>
@@ -167,13 +170,29 @@ function renderSnapshots() {
 
   els.snapshotList.innerHTML = state.snapshots
     .map(
-      (snapshot) => `
-        <div class="snapshot-item">
-          <strong>${escapeHtml(snapshot.id)}</strong>
-          <span>${formatNumber(snapshot.operation_count)} API · ${formatNumber(snapshot.schema_count)} Schema</span>
-          <span>Quét lúc: ${escapeHtml(formatDateTime(snapshot.fetched_at) || "")}</span>
-        </div>
-      `,
+      (snapshot) => {
+        const isBaseline = snapshot.id === "20260609-ts-contract-baseline";
+        const actionHtml = isBaseline
+          ? `<span class="baseline-tag">⭐ Bản chuẩn</span>`
+          : `
+            <div class="snapshot-actions">
+              <button class="text-button set-baseline-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Đặt làm chuẩn</button>
+              <span class="action-divider">|</span>
+              <button class="text-button delete-snapshot-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Xoá</button>
+            </div>
+          `;
+
+        return `
+          <div class="snapshot-item">
+            <div class="snapshot-title-row">
+              <strong>${escapeHtml(snapshot.id)}</strong>
+              ${actionHtml}
+            </div>
+            <span>${formatNumber(snapshot.operation_count)} API · ${formatNumber(snapshot.schema_count)} Schema</span>
+            <span>Quét lúc: ${escapeHtml(formatDateTime(snapshot.fetched_at) || "")}</span>
+          </div>
+        `;
+      }
     )
     .join("");
 }
@@ -438,7 +457,31 @@ els.reportSearch.addEventListener("input", (event) => {
   renderReports();
 });
 
-els.reportList.addEventListener("click", (event) => {
+els.reportList.addEventListener("click", async (event) => {
+  const deleteBtn = event.target.closest(".delete-report-btn");
+  if (deleteBtn) {
+    event.stopPropagation();
+    const file = deleteBtn.dataset.reportFile;
+    if (!confirm(`Bạn có chắc chắn muốn xoá báo cáo "${file}"?`)) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/reports/${encodeURIComponent(file)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Không thể xoá báo cáo");
+      }
+      if (state.activeFile === file) {
+        state.activeFile = "";
+        state.activeReport = null;
+      }
+      await loadDashboard();
+    } catch (error) {
+      alert(`Lỗi: ${error.message}`);
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-report-file]");
   if (!button) {
     return;
@@ -523,6 +566,62 @@ els.runCompareButton.addEventListener("click", async () => {
   } finally {
     els.runCompareButton.textContent = originalText;
     els.runCompareButton.disabled = false;
+  }
+});
+
+els.snapshotList.addEventListener("click", async (event) => {
+  const deleteBtn = event.target.closest(".delete-snapshot-btn");
+  if (deleteBtn) {
+    const snapshot_id = deleteBtn.dataset.snapshotId;
+    if (!confirm(`Bạn có chắc chắn muốn xoá vĩnh viễn bản chụp "${snapshot_id}"? Hành động này không thể hoàn tác.`)) {
+      return;
+    }
+    const originalText = deleteBtn.textContent;
+    deleteBtn.textContent = "Đang xoá...";
+    deleteBtn.disabled = true;
+    try {
+      const response = await fetch(`/api/snapshots/${encodeURIComponent(snapshot_id)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Không thể xoá bản chụp");
+      }
+      await loadDashboard();
+    } catch (error) {
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      deleteBtn.textContent = originalText;
+      deleteBtn.disabled = false;
+    }
+    return;
+  }
+
+  const button = event.target.closest(".set-baseline-btn");
+  if (!button) {
+    return;
+  }
+  const snapshot_id = button.dataset.snapshotId;
+  if (!confirm(`Bạn có chắc chắn muốn đặt bản quét "${snapshot_id}" làm bản mốc chuẩn mới?`)) {
+    return;
+  }
+  const originalText = button.textContent;
+  button.textContent = "Đang đặt...";
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/baseline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ snapshot_id }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Không thể đặt làm baseline");
+    }
+    await loadDashboard();
+  } catch (error) {
+    alert(`Lỗi: ${error.message}`);
+  } finally {
+    button.textContent = originalText;
+    button.disabled = false;
   }
 });
 
