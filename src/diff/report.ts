@@ -29,6 +29,9 @@ function renderChange(change: DiffChange): string[] {
   if (change.tags && change.tags.length > 0) {
     lines.push(`- Tags: ${change.tags.map((tag) => `\`${tag}\``).join(", ")}`);
   }
+  if (change.groups && change.groups.length > 0) {
+    lines.push(`- Groups: ${change.groups.map((group) => `\`${group}\``).join(", ")}`);
+  }
   for (const detail of change.details) {
     lines.push(`- ${detail}`);
   }
@@ -62,6 +65,17 @@ export function renderMarkdownReport(report: DiffReport): string {
     `- Schemas: +${report.summary.schemas.added} / -${report.summary.schemas.removed} / ~${report.summary.schemas.changed} / unchanged ${report.summary.schemas.unchanged}`,
     "",
   ];
+
+  const groupEntries = Object.entries(report.summary.by_group);
+  if (groupEntries.length > 0) {
+    lines.push("## Groups", "");
+    for (const [group, summary] of groupEntries) {
+      lines.push(
+        `- ${group}: ${summary.total_changes} changes, ${summary.by_severity.BREAKING} breaking, ${summary.by_severity.REVIEW_REQUIRED} review, ${summary.by_severity.NON_BREAKING} non-breaking, ${summary.by_severity.DOC_ONLY} doc-only`,
+      );
+    }
+    lines.push("");
+  }
 
   if (report.changes.length === 0) {
     lines.push("## Changes", "", "No contract changes detected.", "");

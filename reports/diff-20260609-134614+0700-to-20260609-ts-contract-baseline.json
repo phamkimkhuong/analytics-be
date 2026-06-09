@@ -4,6 +4,9 @@
       "details": [
         "Only documentation/example/description-level content appears to differ after contract normalization."
       ],
+      "groups": [
+        "Spec Metadata"
+      ],
       "id": "raw_only_changed:20260609-134614+0700->20260609-ts-contract-baseline",
       "key": "20260609-134614+0700->20260609-ts-contract-baseline",
       "kind": "raw_only_changed",
@@ -403,8 +406,28 @@
     },
     "raw_sha256": "b06514fd2e76d73bc5adc4df9705249491e47f9c770d530b436d47351dcd4c3a"
   },
-  "generated_at": "2026-06-09T14:30:13.240+07:00",
+  "generated_at": "2026-06-09T14:38:14.410+07:00",
   "summary": {
+    "by_group": {
+      "Spec Metadata": {
+        "by_kind": {
+          "operation_added": 0,
+          "operation_changed": 0,
+          "operation_removed": 0,
+          "raw_only_changed": 1,
+          "schema_added": 0,
+          "schema_changed": 0,
+          "schema_removed": 0
+        },
+        "by_severity": {
+          "BREAKING": 0,
+          "DOC_ONLY": 1,
+          "NON_BREAKING": 0,
+          "REVIEW_REQUIRED": 0
+        },
+        "total_changes": 1
+      }
+    },
     "by_kind": {
       "operation_added": 0,
       "operation_changed": 0,

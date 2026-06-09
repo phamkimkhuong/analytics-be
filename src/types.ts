@@ -31,10 +31,12 @@ export interface DiffCliOptions {
   from?: string;
   to?: string;
   outputDir: string;
+  groupsConfig: string;
 }
 
 export interface ResolvedDiffCliOptions {
   from: string;
   to: string;
   outputDir: string;
+  groupsConfig: string;
 }

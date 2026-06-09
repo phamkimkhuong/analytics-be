@@ -97,6 +97,41 @@ Với schema đổi, report Markdown sẽ liệt kê chi tiết như:
 
 Report JSON có thêm `schema_changes` để bước sau map sang source app buyer/seller tự động.
 
+## Nhóm API theo giao diện/nghiệp vụ
+
+Mặc định diff dùng cấu hình:
+
+```text
+config/api-groups.json
+```
+
+Các nhóm ban đầu:
+
+- `Buyer App`
+- `Seller App`
+- `Admin Console`
+- `Auth & User`
+- `Wallet & Finance`
+- `Chat & Support`
+- `Catalog & Marketing`
+- `Storage & Integration`
+- `Spec Metadata`
+- `Ungrouped`
+
+Operation được gán nhóm theo `tags` hoặc `path_prefixes`. Schema được gán nhóm theo 2 cách:
+
+- schema name khớp `schema_name_patterns`;
+- schema được operation thuộc nhóm đó reference qua `$ref`.
+
+Có thể dùng file nhóm khác:
+
+```powershell
+npm run build
+node dist/cli.js diff --from snapshots/20260609-baseline --to snapshots/20260610-after-deploy --groups-config config/api-groups.json
+```
+
+Report Markdown có thêm section `Groups`. Report JSON có thêm `groups` trên từng change và `summary.by_group` để tool khác đọc tự động.
+
 Mức độ ảnh hưởng:
 
 - `BREAKING`: có nguy cơ làm app buyer/seller lỗi ngay, ví dụ endpoint bị xóa, thêm required param, response status bị xóa, schema bị xóa.

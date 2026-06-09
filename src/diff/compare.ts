@@ -328,6 +328,7 @@ function buildSummary(from: SnapshotForDiff, to: SnapshotForDiff, changes: DiffC
     raw_changed: from.rawHash !== to.rawHash,
     by_severity: bySeverity,
     by_kind: byKind,
+    by_group: {},
     operations: {
       added: byKind.operation_added,
       removed: byKind.operation_removed,

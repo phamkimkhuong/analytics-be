@@ -27,6 +27,7 @@ function usage(): string {
     "  --from <snapshot>      Snapshot id, directory, or openapi.json path.",
     "  --to <snapshot>        Snapshot id, directory, or openapi.json path.",
     "  --output-dir <path>    Report output directory. Defaults to ./reports.",
+    "  --groups-config <path> API grouping config. Defaults to ./config/api-groups.json.",
     "",
     "  -h, --help             Show this help.",
   ].join("\n");
@@ -98,6 +99,7 @@ function parseSnapshotOptions(args: string[]): CliOptions {
 function parseDiffOptions(args: string[]): ResolvedDiffCliOptions {
   const options: DiffCliOptions = {
     outputDir: resolve(ROOT_DIR, "reports"),
+    groupsConfig: resolve(ROOT_DIR, "config", "api-groups.json"),
   };
   const positional: string[] = [];
 
@@ -114,6 +116,10 @@ function parseDiffOptions(args: string[]): ResolvedDiffCliOptions {
         break;
       case "--output-dir":
         options.outputDir = resolve(readOptionValue(args, index, arg));
+        index += 1;
+        break;
+      case "--groups-config":
+        options.groupsConfig = resolve(readOptionValue(args, index, arg));
         index += 1;
         break;
       case "-h":
@@ -140,6 +146,7 @@ function parseDiffOptions(args: string[]): ResolvedDiffCliOptions {
     from: options.from,
     to: options.to,
     outputDir: options.outputDir,
+    groupsConfig: options.groupsConfig,
   };
 }
 
@@ -172,6 +179,7 @@ async function runDiffCommand(args: string[]): Promise<void> {
     to: options.to,
     rootDir: ROOT_DIR,
     outputDir: options.outputDir,
+    groupsConfig: options.groupsConfig,
   });
 
   const summary = {
@@ -186,6 +194,7 @@ async function runDiffCommand(args: string[]): Promise<void> {
     doc_only: report.summary.by_severity.DOC_ONLY,
     operations: report.summary.operations,
     schemas: report.summary.schemas,
+    by_group: report.summary.by_group,
     reports: output,
   };
   console.log(JSON.stringify(summary, null, 2));
