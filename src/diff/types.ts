@@ -123,6 +123,7 @@ export interface SnapshotDescriptor {
   raw_sha256: string;
   contract_sha256: string;
   openapi?: unknown;
+  fetched_at?: string;
 }
 
 export interface DiffOutputPaths {

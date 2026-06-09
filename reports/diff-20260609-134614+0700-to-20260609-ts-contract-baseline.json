@@ -18,6 +18,7 @@
   "from": {
     "contract_sha256": "bb5ab224fdea0aab5119df9253a7f3234483f6f89216e3ea35f9bf0948cf1dd7",
     "dir": "C:\\analytics-be\\snapshots\\20260609-134614+0700",
+    "fetched_at": "2026-06-09T13:46:14.777149+07:00",
     "id": "20260609-134614+0700",
     "openapi": {
       "api_version": "1.0.0",
@@ -406,7 +407,7 @@
     },
     "raw_sha256": "b06514fd2e76d73bc5adc4df9705249491e47f9c770d530b436d47351dcd4c3a"
   },
-  "generated_at": "2026-06-09T14:38:14.410+07:00",
+  "generated_at": "2026-06-09T15:22:29.052+07:00",
   "summary": {
     "by_group": {
       "Spec Metadata": {
@@ -462,6 +463,7 @@
   "to": {
     "contract_sha256": "bb5ab224fdea0aab5119df9253a7f3234483f6f89216e3ea35f9bf0948cf1dd7",
     "dir": "C:\\analytics-be\\snapshots\\20260609-ts-contract-baseline",
+    "fetched_at": "2026-06-09T14:09:30.596+07:00",
     "id": "20260609-ts-contract-baseline",
     "openapi": {
       "api_version": "1.0.0",

@@ -24,8 +24,21 @@
 
         <div class="report-list" id="reportList"></div>
 
+        <div class="compare-panel">
+          <div class="panel-title">So sánh mới</div>
+          <div class="compare-row">
+            <select id="compareFrom" class="input select-input" title="Bản cũ"></select>
+            <span class="compare-arrow">→</span>
+            <select id="compareTo" class="input select-input" title="Bản mới"></select>
+          </div>
+          <button class="btn-primary" id="runCompareButton" type="button">So sánh ngay</button>
+        </div>
+
         <div class="snapshot-panel">
-          <div class="panel-title">Bản chụp OpenAPI</div>
+          <div class="panel-title-row">
+            <div class="panel-title">Bản chụp OpenAPI</div>
+            <button class="text-button" id="takeSnapshotButton" type="button">+ Quét mới</button>
+          </div>
           <div id="snapshotList" class="snapshot-list"></div>
         </div>
       </aside>
@@ -46,7 +59,7 @@
 
         <section class="metric-grid" id="metricGrid"></section>
 
-        <section class="content-grid">
+        <section class="content-grid" id="contentGrid">
           <div class="panel">
             <div class="panel-header">
               <h3>Nhóm bị ảnh hưởng</h3>
@@ -55,9 +68,9 @@
             <div id="groupList" class="group-list"></div>
           </div>
 
-          <div class="panel filters-panel">
+          <div class="panel filters-panel" id="filtersPanel">
             <div class="panel-header">
-              <h3>Lọc thay đổi</h3>
+              <h3>Lọc nâng cao</h3>
               <button class="text-button" id="clearFiltersButton" type="button">Xóa lọc</button>
             </div>
             <div class="filters">

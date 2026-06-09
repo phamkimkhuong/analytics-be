@@ -11,6 +11,8 @@ const state = {
   },
 };
 
+const SHOW_FILTERS_THRESHOLD = 20;
+
 const severityClass = {
   BREAKING: "breaking",
   REVIEW_REQUIRED: "review",
@@ -43,14 +45,20 @@ const els = {
   toHash: document.querySelector("#toHash"),
   verdictPanel: document.querySelector("#verdictPanel"),
   metricGrid: document.querySelector("#metricGrid"),
+  contentGrid: document.querySelector("#contentGrid"),
   groupList: document.querySelector("#groupList"),
   groupCount: document.querySelector("#groupCount"),
   severityFilter: document.querySelector("#severityFilter"),
+  filtersPanel: document.querySelector("#filtersPanel"),
   groupFilter: document.querySelector("#groupFilter"),
   changeSearch: document.querySelector("#changeSearch"),
   clearFiltersButton: document.querySelector("#clearFiltersButton"),
   changeList: document.querySelector("#changeList"),
   changeCount: document.querySelector("#changeCount"),
+  compareFrom: document.querySelector("#compareFrom"),
+  compareTo: document.querySelector("#compareTo"),
+  runCompareButton: document.querySelector("#runCompareButton"),
+  takeSnapshotButton: document.querySelector("#takeSnapshotButton"),
 };
 
 async function fetchJson(url) {
@@ -69,9 +77,35 @@ function shortHash(value) {
   return value ? String(value).slice(0, 12) : "-";
 }
 
+function formatSnapshotId(id) {
+  if (!id) return "-";
+  const match = id.match(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\+0700$/);
+  if (match) {
+    const [, year, month, day, hours, minutes, seconds] = match;
+    return `Quét ${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  }
+  if (id.startsWith("20260609-")) {
+    return `Bản ${id.replace("20260609-", "")}`;
+  }
+  return id;
+}
+
+function formatSnapshotIdShort(id) {
+  if (!id) return "-";
+  const match = id.match(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\+0700$/);
+  if (match) {
+    const [, year, month, day, hours, minutes] = match;
+    return `${day}/${month} ${hours}:${minutes}`;
+  }
+  if (id.startsWith("20260609-")) {
+    return id.replace("20260609-", "");
+  }
+  return id;
+}
+
 function reportLabel(report) {
   if (report.from && report.to) {
-    return `${report.from} → ${report.to}`;
+    return `${formatSnapshotId(report.from)} → ${formatSnapshotId(report.to)}`;
   }
   return report.file;
 }
@@ -87,27 +121,45 @@ function renderReports() {
 
   els.reportList.innerHTML = reports
     .map(
-      (report) => `
-        <button class="report-item ${report.file === state.activeFile ? "active" : ""}" data-report-file="${escapeHtml(report.file)}" type="button">
-          <div class="report-item-title">${escapeHtml(reportLabel(report))}</div>
-          <div class="report-item-meta">${escapeHtml(report.generated_at || report.file)}</div>
-          <div class="mini-badges">
-            ${miniBadge("BREAKING", report.breaking)}
-            ${miniBadge("REVIEW_REQUIRED", report.review_required)}
-            ${miniBadge("NON_BREAKING", report.non_breaking)}
-            ${miniBadge("DOC_ONLY", report.doc_only)}
-          </div>
-        </button>
-      `,
+      (report) => {
+        const title = report.generated_at ? `Báo cáo ${formatDateTime(report.generated_at)}` : report.file;
+        const range = report.from && report.to ? `${formatSnapshotIdShort(report.from)} → ${formatSnapshotIdShort(report.to)}` : "";
+        
+        let badgeHtml = "";
+        if (report.breaking > 0) {
+          badgeHtml = `<span class="badge breaking">🔴 Vỡ app: ${report.breaking}</span>`;
+        } else if (report.review_required > 0) {
+          badgeHtml = `<span class="badge review">⚠️ Rà soát: ${report.review_required}</span>`;
+        }
+
+        return `
+          <button class="report-item ${report.file === state.activeFile ? "active" : ""}" data-report-file="${escapeHtml(report.file)}" type="button">
+            <div class="report-item-title">${escapeHtml(title)}</div>
+            <div class="report-item-meta">${escapeHtml(range)}</div>
+            ${badgeHtml ? `<div class="mini-badges">${badgeHtml}</div>` : ""}
+          </button>
+        `;
+      }
     )
     .join("");
 }
 
-function miniBadge(severity, value) {
-  return `<span class="badge ${severityClass[severity]}">${severityLabel[severity]} ${formatNumber(value ?? 0)}</span>`;
-}
-
 function renderSnapshots() {
+  const currentFrom = els.compareFrom.value;
+  const currentTo = els.compareTo.value;
+
+  const optionsHtml = state.snapshots
+    .map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(formatSnapshotId(s.id))}</option>`)
+    .join("");
+
+  els.compareFrom.innerHTML = optionsHtml;
+  els.compareTo.innerHTML = optionsHtml;
+
+  if (state.snapshots.length >= 2) {
+    els.compareTo.value = currentTo && state.snapshots.some(s => s.id === currentTo) ? currentTo : state.snapshots[0].id;
+    els.compareFrom.value = currentFrom && state.snapshots.some(s => s.id === currentFrom) ? currentFrom : state.snapshots[1].id;
+  }
+
   if (state.snapshots.length === 0) {
     els.snapshotList.innerHTML = `<div class="empty-state">Chưa có snapshot</div>`;
     return;
@@ -118,8 +170,8 @@ function renderSnapshots() {
       (snapshot) => `
         <div class="snapshot-item">
           <strong>${escapeHtml(snapshot.id)}</strong>
-          <span>${formatNumber(snapshot.operation_count)} ops · ${formatNumber(snapshot.schema_count)} schemas</span>
-          <span>${escapeHtml(snapshot.fetched_at || "")}</span>
+          <span>${formatNumber(snapshot.operation_count)} API · ${formatNumber(snapshot.schema_count)} Schema</span>
+          <span>Quét lúc: ${escapeHtml(formatDateTime(snapshot.fetched_at) || "")}</span>
         </div>
       `,
     )
@@ -149,6 +201,26 @@ function renderMetrics(report) {
     metric("Thường an toàn", summary.by_severity?.NON_BREAKING ?? 0),
     metric("Chỉ tài liệu", summary.by_severity?.DOC_ONLY ?? 0),
   ].join("");
+}
+
+function resetChangeFilters() {
+  state.filters.severity = "";
+  state.filters.group = "";
+  state.filters.changeSearch = "";
+  els.severityFilter.value = "";
+  els.groupFilter.value = "";
+  els.changeSearch.value = "";
+}
+
+function renderFilterVisibility(report) {
+  const totalChanges = report?.changes?.length ?? 0;
+  const shouldShow = totalChanges > SHOW_FILTERS_THRESHOLD;
+  els.filtersPanel.classList.toggle("hidden", !shouldShow);
+  els.contentGrid.classList.toggle("filters-hidden", !shouldShow);
+
+  if (!shouldShow) {
+    resetChangeFilters();
+  }
 }
 
 function verdict(report) {
@@ -297,13 +369,32 @@ function renderChanges(report) {
     .join("");
 }
 
+function formatDateTime(isoString) {
+  if (!isoString) return "";
+  try {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) {
+      return isoString;
+    }
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  } catch {
+    return isoString;
+  }
+}
+
 function renderReport(report) {
   state.activeReport = report;
-  els.reportGenerated.textContent = report.generated_at ? `Tạo lúc ${report.generated_at}` : "";
-  els.reportTitle.textContent = `Bản cũ ${report.from?.id ?? "-"} → bản mới ${report.to?.id ?? "-"}`;
-  els.fromHash.textContent = `bản cũ: ${shortHash(report.from?.contract_sha256)}`;
-  els.toHash.textContent = `bản mới: ${shortHash(report.to?.contract_sha256)}`;
+  els.reportGenerated.textContent = report.generated_at ? `Tạo lúc: ${formatDateTime(report.generated_at)}` : "";
+  els.reportTitle.textContent = `${report.from?.id ?? "-"} → ${report.to?.id ?? "-"}`;
+  
+  const fromTimeStr = report.from?.fetched_at ? ` (${formatDateTime(report.from.fetched_at)})` : "";
+  const toTimeStr = report.to?.fetched_at ? ` (${formatDateTime(report.to.fetched_at)})` : "";
+  
+  els.fromHash.textContent = `from: ${shortHash(report.from?.contract_sha256)}${fromTimeStr}`;
+  els.toHash.textContent = `to: ${shortHash(report.to?.contract_sha256)}${toTimeStr}`;
   renderVerdict(report);
+  renderFilterVisibility(report);
   renderMetrics(report);
   renderGroups(report);
   renderChanges(report);
@@ -378,6 +469,61 @@ els.clearFiltersButton.addEventListener("click", () => {
   els.groupFilter.value = "";
   els.changeSearch.value = "";
   renderChanges(state.activeReport);
+});
+
+els.takeSnapshotButton.addEventListener("click", async () => {
+  const originalText = els.takeSnapshotButton.textContent;
+  els.takeSnapshotButton.textContent = "Đang quét...";
+  els.takeSnapshotButton.disabled = true;
+  try {
+    const response = await fetch("/api/snapshot", { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Không thể chụp snapshot");
+    }
+    await loadDashboard();
+  } catch (error) {
+    alert(`Lỗi: ${error.message}`);
+  } finally {
+    els.takeSnapshotButton.textContent = originalText;
+    els.takeSnapshotButton.disabled = false;
+  }
+});
+
+els.runCompareButton.addEventListener("click", async () => {
+  const from = els.compareFrom.value;
+  const to = els.compareTo.value;
+  if (!from || !to) {
+    alert("Vui lòng chọn 2 bản chụp để so sánh!");
+    return;
+  }
+  if (from === to) {
+    alert("Hai bản chụp so sánh phải khác nhau!");
+    return;
+  }
+  const originalText = els.runCompareButton.textContent;
+  els.runCompareButton.textContent = "Đang so sánh...";
+  els.runCompareButton.disabled = true;
+  try {
+    const response = await fetch("/api/diff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Không thể tạo so sánh");
+    }
+    await loadDashboard();
+    if (result.file) {
+      await selectReport(result.file);
+    }
+  } catch (error) {
+    alert(`Lỗi: ${error.message}`);
+  } finally {
+    els.runCompareButton.textContent = originalText;
+    els.runCompareButton.disabled = false;
+  }
 });
 
 loadDashboard().catch((error) => {

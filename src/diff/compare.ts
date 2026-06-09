@@ -351,6 +351,7 @@ function snapshotDescriptor(snapshot: SnapshotForDiff) {
     raw_sha256: snapshot.rawHash,
     contract_sha256: snapshot.contractHash,
     openapi: snapshot.manifest?.openapi,
+    fetched_at: typeof snapshot.manifest?.fetched_at === "string" ? snapshot.manifest.fetched_at : undefined,
   };
 }
 

@@ -208,11 +208,67 @@ select {
   padding-top: 14px;
 }
 
+.panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .panel-title {
   color: #d7e1ee;
   font-size: 12px;
   font-weight: 780;
   text-transform: uppercase;
+}
+
+.compare-panel {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.compare-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compare-arrow {
+  color: #aebdd0;
+  font-size: 16px;
+}
+
+.select-input {
+  cursor: pointer;
+  padding: 6px 8px;
+  min-height: 34px !important;
+}
+
+.select-input option {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.btn-primary {
+  width: 100%;
+  min-height: 36px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .snapshot-list {
@@ -362,6 +418,14 @@ select {
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.content-grid.filters-hidden {
+  grid-template-columns: 1fr;
+}
+
+.filters-panel.hidden {
+  display: none;
 }
 
 .panel {

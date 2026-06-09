@@ -2,6 +2,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createSnapshot } from "../snapshot.js";
+import { loadSourcesConfig, resolveSource } from "../config.js";
+import { runDiff } from "../diff/index.js";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WEB_DIR = resolve(ROOT_DIR, "web");
@@ -146,7 +149,67 @@ async function listSnapshots(): Promise<SnapshotSummary[]> {
   return snapshots;
 }
 
-async function handleApi(pathname: string, response: ServerResponse): Promise<void> {
+async function readJsonBody(request: IncomingMessage): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    request.on("data", (chunk) => {
+      body += chunk;
+    });
+    request.on("end", () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        reject(new Error("Invalid JSON body"));
+      }
+    });
+    request.on("error", (err) => reject(err));
+  });
+}
+
+async function handleApi(pathname: string, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (request.method === "POST" && pathname === "/api/snapshot") {
+    const configPath = resolve(ROOT_DIR, "config", "sources.json");
+    const config = await loadSourcesConfig(configPath);
+    const source = resolveSource(config);
+    const outputDir = resolve(ROOT_DIR, "snapshots");
+    const { snapshotDir, manifest } = await createSnapshot({
+      source,
+      outputDir,
+      timeout: 30,
+    });
+    sendJson(response, 200, {
+      ok: true,
+      snapshot_id: manifest.snapshot_id,
+      operation_count: manifest.openapi.operation_count,
+      schema_count: manifest.openapi.schema_count,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && pathname === "/api/diff") {
+    const body = await readJsonBody(request);
+    const { from, to } = body;
+    if (!from || !to) {
+      sendJson(response, 400, { error: "Missing from/to snapshot IDs" });
+      return;
+    }
+    const groupsConfig = resolve(ROOT_DIR, "config", "api-groups.json");
+    const outputDir = resolve(ROOT_DIR, "reports");
+    const { report, output } = await runDiff({
+      from,
+      to,
+      rootDir: ROOT_DIR,
+      outputDir,
+      groupsConfig,
+    });
+    sendJson(response, 200, {
+      ok: true,
+      file: basename(output.json),
+      total_changes: report.summary.total_changes,
+    });
+    return;
+  }
+
   if (pathname === "/api/health") {
     sendJson(response, 200, { ok: true });
     return;
@@ -204,7 +267,7 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     if (url.pathname.startsWith("/api/")) {
-      await handleApi(url.pathname, response);
+      await handleApi(url.pathname, request, response);
       return;
     }
     await serveStatic(url.pathname, response);
