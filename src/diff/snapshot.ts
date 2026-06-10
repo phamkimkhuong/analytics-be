@@ -22,7 +22,8 @@ async function pathExists(path: string): Promise<boolean> {
 
 async function resolveSnapshotDir(input: string, rootDir: string): Promise<string> {
   const direct = resolve(input);
-  const byId = resolve(rootDir, "snapshots", input);
+  const snapshotsDir = process.env.SNAPSHOTS_DIR || resolve(rootDir, "snapshots");
+  const byId = resolve(snapshotsDir, input);
   const candidates = [direct, byId];
 
   for (const candidate of candidates) {

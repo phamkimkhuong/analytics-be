@@ -11,8 +11,8 @@ import { loadApiGroupsConfig } from "../grouping/config.js";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WEB_DIR = resolve(ROOT_DIR, "web");
-const REPORTS_DIR = resolve(ROOT_DIR, "reports");
-const SNAPSHOTS_DIR = resolve(ROOT_DIR, "snapshots");
+const REPORTS_DIR = process.env.REPORTS_DIR ? resolve(process.env.REPORTS_DIR) : resolve(ROOT_DIR, "reports");
+const SNAPSHOTS_DIR = process.env.SNAPSHOTS_DIR ? resolve(process.env.SNAPSHOTS_DIR) : resolve(ROOT_DIR, "snapshots");
 const DEFAULT_PORT = 4627;
 
 interface ReportSummary {
@@ -180,7 +180,7 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
     const configPath = resolve(ROOT_DIR, "config", "sources.json");
     const config = await loadSourcesConfig(configPath);
     const source = resolveSource(config);
-    const outputDir = resolve(ROOT_DIR, "snapshots");
+    const outputDir = SNAPSHOTS_DIR;
     const { snapshotDir, manifest } = await createSnapshot({
       source,
       outputDir,
@@ -203,7 +203,7 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
       return;
     }
     const groupsConfig = resolve(ROOT_DIR, "config", "api-groups.json");
-    const outputDir = resolve(ROOT_DIR, "reports");
+    const outputDir = REPORTS_DIR;
     const { report, output } = await runDiff({
       from,
       to,
