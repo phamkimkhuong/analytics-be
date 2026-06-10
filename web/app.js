@@ -10,6 +10,7 @@ const state = {
     group: "",
     changeSearch: "",
   },
+  activeTab: "api",
 };
 
 // LCS Line Diffing Algorithm
@@ -221,6 +222,10 @@ const els = {
   snapshotDetailCode: document.querySelector("#snapshotDetailCode"),
   snapshotDetailRelatedApis: document.querySelector("#snapshotDetailRelatedApis"),
   topbar: document.querySelector(".topbar"),
+  tabBtnApi: document.querySelector("#tabBtnApi"),
+  tabBtnSchema: document.querySelector("#tabBtnSchema"),
+  apiChangeCount: document.querySelector("#apiChangeCount"),
+  schemaChangeCount: document.querySelector("#schemaChangeCount"),
 };
 
 // Snapshot Explorer State
@@ -742,15 +747,23 @@ function changeMatches(change) {
 }
 
 function renderChanges(report) {
-  const changes = (report?.changes ?? []).filter(changeMatches);
-  els.changeCount.textContent = `${changes.length} thay đổi`;
+  const allFilteredChanges = (report?.changes ?? []).filter(changeMatches);
 
-  if (changes.length === 0) {
+  const apiChanges = allFilteredChanges.filter((c) => c.subject === "operation" || c.subject === "spec");
+  const schemaChanges = allFilteredChanges.filter((c) => c.subject === "schema");
+
+  if (els.apiChangeCount) els.apiChangeCount.textContent = apiChanges.length;
+  if (els.schemaChangeCount) els.schemaChangeCount.textContent = schemaChanges.length;
+
+  const activeChanges = state.activeTab === "api" ? apiChanges : schemaChanges;
+  els.changeCount.textContent = `${activeChanges.length} thay đổi`;
+
+  if (activeChanges.length === 0) {
     els.changeList.innerHTML = `<div class="empty-state">Không có thay đổi phù hợp</div>`;
     return;
   }
 
-  els.changeList.innerHTML = changes
+  els.changeList.innerHTML = activeChanges
     .map(
       (change) => {
         const hasDiff = change.before !== undefined || change.after !== undefined;
@@ -909,6 +922,10 @@ async function selectReport(file) {
     }
   }
   
+  state.activeTab = "api";
+  if (els.tabBtnApi) els.tabBtnApi.classList.add("active");
+  if (els.tabBtnSchema) els.tabBtnSchema.classList.remove("active");
+  
   renderReport(report);
 }
 
@@ -997,6 +1014,22 @@ els.clearFiltersButton.addEventListener("click", () => {
   els.severityFilter.value = "";
   els.groupFilter.value = "";
   els.changeSearch.value = "";
+  renderChanges(state.activeReport);
+});
+
+els.tabBtnApi.addEventListener("click", () => {
+  if (state.activeTab === "api") return;
+  state.activeTab = "api";
+  els.tabBtnApi.classList.add("active");
+  els.tabBtnSchema.classList.remove("active");
+  renderChanges(state.activeReport);
+});
+
+els.tabBtnSchema.addEventListener("click", () => {
+  if (state.activeTab === "schema") return;
+  state.activeTab = "schema";
+  els.tabBtnSchema.classList.add("active");
+  els.tabBtnApi.classList.remove("active");
   renderChanges(state.activeReport);
 });
 

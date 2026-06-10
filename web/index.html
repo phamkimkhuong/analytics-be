@@ -106,9 +106,21 @@
           </section>
 
           <section class="panel changes-panel">
-              <div class="panel-header">
-              <h3>Chi tiết thay đổi</h3>
-              <span id="changeCount" class="muted"></span>
+            <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <h3 style="margin: 0;">Chi tiết thay đổi</h3>
+                <span id="changeCount" class="muted"></span>
+              </div>
+              <div class="tab-container">
+                <button class="tab-btn active" id="tabBtnApi" type="button">
+                  API & Spec
+                  <span class="tab-count" id="apiChangeCount">0</span>
+                </button>
+                <button class="tab-btn" id="tabBtnSchema" type="button">
+                  Schema
+                  <span class="tab-count" id="schemaChangeCount">0</span>
+                </button>
+              </div>
             </div>
             <div id="changeList" class="change-list"></div>
           </section>
