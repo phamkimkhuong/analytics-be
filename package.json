@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "analytics-be": "./dist/cli.js"
+  },
   "description": "CLI for snapshotting and analyzing Calatha backend OpenAPI contracts.",
   "scripts": {
     "presnapshot": "npm run build --silent",

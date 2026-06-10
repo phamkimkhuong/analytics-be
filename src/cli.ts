@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadSourcesConfig, resolveSource } from "./config.js";
@@ -9,34 +10,33 @@ const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function usage(): string {
   return [
-    "Usage:",
-    "  npm run snapshot -- [options]",
-    "  npm run diff -- <from-snapshot> <to-snapshot>",
-    "  npm run cli -- snapshot [options]",
-    "  npm run cli -- diff --from <snapshot> --to <snapshot>",
+    "Cách sử dụng:",
+    "  analytics-be snapshot [tùy_chọn]",
+    "  analytics-be diff <bản_cũ> <bản_mới> [tùy_chọn]",
+    "  analytics-be diff --from <bản_cũ> --to <bản_mới> [tùy_chọn]",
     "",
-    "Snapshot options:",
-    "  --source <key>         Source key from config/sources.json. Defaults to config.default.",
-    "  --url <url>            Custom OpenAPI JSON URL. Overrides --source.",
-    "  --snapshot-id <id>     Folder name under snapshots/. Defaults to current Vietnam timestamp.",
-    "  --output-dir <path>    Snapshot output directory. Defaults to ./snapshots.",
-    "  --config <path>        Sources config path. Defaults to ./config/sources.json.",
-    "  --timeout <seconds>    HTTP timeout. Defaults to 30.",
+    "Tùy chọn lệnh snapshot (Chụp OpenAPI contract):",
+    "  --source <key>         Key nguồn trong config/sources.json. Mặc định là config.default.",
+    "  --url <url>            URL JSON OpenAPI tùy chỉnh. Ghi đè --source.",
+    "  --snapshot-id <id>     Tên thư mục lưu bản chụp dưới snapshots/. Mặc định là timestamp Việt Nam hiện tại.",
+    "  --output-dir <path>    Thư mục xuất bản chụp. Mặc định là ./snapshots.",
+    "  --config <path>        Đường dẫn cấu hình nguồn. Mặc định là ./config/sources.json.",
+    "  --timeout <seconds>    Thời gian timeout HTTP (giây). Mặc định là 30.",
     "",
-    "Diff options:",
-    "  --from <snapshot>      Snapshot id, directory, or openapi.json path.",
-    "  --to <snapshot>        Snapshot id, directory, or openapi.json path.",
-    "  --output-dir <path>    Report output directory. Defaults to ./reports.",
-    "  --groups-config <path> API grouping config. Defaults to ./config/api-groups.json.",
+    "Tùy chọn lệnh diff (So sánh hai bản chụp):",
+    "  --from <snapshot>      ID bản chụp, đường dẫn thư mục, hoặc đường dẫn file openapi.json cũ.",
+    "  --to <snapshot>        ID bản chụp, đường dẫn thư mục, hoặc đường dẫn file openapi.json mới.",
+    "  --output-dir <path>    Thư mục xuất báo cáo so sánh. Mặc định là ./reports.",
+    "  --groups-config <path> Cấu hình phân nhóm API. Mặc định là ./config/api-groups.json.",
     "",
-    "  -h, --help             Show this help.",
+    "  -h, --help             Hiển thị hướng dẫn này.",
   ].join("\n");
 }
 
 function readOptionValue(args: string[], index: number, option: string): string {
   const value = args[index + 1];
   if (!value || value.startsWith("--")) {
-    throw new Error(`Missing value for ${option}`);
+    throw new Error(`Thiếu giá trị cho tùy chọn ${option}`);
   }
   return value;
 }
@@ -74,7 +74,7 @@ function parseSnapshotOptions(args: string[]): CliOptions {
       case "--timeout": {
         const timeout = Number(readOptionValue(args, index, arg));
         if (!Number.isFinite(timeout) || timeout <= 0) {
-          throw new Error("--timeout must be a positive number.");
+          throw new Error("--timeout phải là một số nguyên dương.");
         }
         options.timeout = timeout;
         index += 1;
@@ -89,7 +89,7 @@ function parseSnapshotOptions(args: string[]): CliOptions {
           options.snapshotId = arg;
           break;
         }
-        throw new Error(`Unknown option: ${arg}`);
+        throw new Error(`Tùy chọn không xác định: ${arg}`);
     }
   }
 
@@ -131,7 +131,7 @@ function parseDiffOptions(args: string[]): ResolvedDiffCliOptions {
           positional.push(arg);
           break;
         }
-        throw new Error(`Unknown option: ${arg}`);
+        throw new Error(`Tùy chọn không xác định: ${arg}`);
     }
   }
 
@@ -139,7 +139,7 @@ function parseDiffOptions(args: string[]): ResolvedDiffCliOptions {
   options.to ??= positional[1];
 
   if (!options.from || !options.to) {
-    throw new Error("Diff requires --from/--to or two positional snapshot arguments.");
+    throw new Error("Lệnh so sánh (diff) yêu cầu truyền --from/--to hoặc 2 tham số ID bản chụp cũ và mới.");
   }
 
   return {
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  throw new Error(`Unknown command: ${command}\n\n${usage()}`);
+  throw new Error(`Lệnh không xác định: ${command}\n\n${usage()}`);
 }
 
 main().catch((error: unknown) => {
