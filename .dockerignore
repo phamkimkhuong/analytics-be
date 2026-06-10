@@ -5,7 +5,6 @@ reports
 .git
 .gitignore
 .tmp
-package-lock.json
 README.md
 *.md
 .gemini
