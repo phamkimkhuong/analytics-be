@@ -3,6 +3,7 @@ const state = {
   snapshots: [],
   activeFile: "",
   activeReport: null,
+  activeTargetSnapshot: null,
   filters: {
     reportSearch: "",
     severity: "",
@@ -493,13 +494,16 @@ function renderExplorerList() {
   els.snapshotExplorerList.innerHTML = html;
 }
 
-function findRelatedOperations(schemaName) {
+function findRelatedOperations(schemaName, snapshot = null) {
+  const schemas = snapshot ? (snapshot.schemas || []) : explorerState.schemas;
+  const operations = snapshot ? (snapshot.operations || []) : explorerState.operations;
+
   const relatedSchemas = new Set([schemaName]);
   let sizeBefore;
   
   do {
     sizeBefore = relatedSchemas.size;
-    explorerState.schemas.forEach(s => {
+    schemas.forEach(s => {
       if (relatedSchemas.has(s.name)) return;
       const jsonStr = JSON.stringify(s.contract);
       for (const refName of relatedSchemas) {
@@ -512,7 +516,7 @@ function findRelatedOperations(schemaName) {
   } while (relatedSchemas.size > sizeBefore);
 
   const ops = [];
-  explorerState.operations.forEach(op => {
+  operations.forEach(op => {
     const jsonStr = JSON.stringify(op.contract);
     const isReferenced = Array.from(relatedSchemas).some(refName => {
       return jsonStr.includes(`#/components/schemas/${refName}`);
@@ -805,6 +809,29 @@ function renderChanges(report) {
           `;
         }
 
+        let relatedApisHtml = "";
+        if (change.subject === "schema" && state.activeTargetSnapshot) {
+          const relatedOps = findRelatedOperations(change.key, state.activeTargetSnapshot);
+          if (relatedOps.length > 0) {
+            relatedApisHtml = `
+              <div class="details" style="margin-top: 10px; margin-bottom: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; list-style: none; border-left: none;">
+                <div style="font-size: 11px; font-weight: 750; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Các API liên quan (sử dụng Schema này):</div>
+                <div style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;">
+                  ${relatedOps.map(op => {
+                    const methodLower = op.method.toLowerCase();
+                    return `
+                      <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px;">
+                        <span class="method-badge ${methodLower}" style="font-size: 8.5px; padding: 1px 4px; min-width: 45px; text-align: center; height: 16px; line-height: 14px; flex-shrink: 0;">${escapeHtml(op.method)}</span>
+                        <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(op.path)}">${escapeHtml(op.path)}</span>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          }
+        }
+
         return `
           <article class="change-card">
             <div class="change-head">
@@ -819,6 +846,7 @@ function renderChanges(report) {
                 </div>
               </div>
             </div>
+            ${relatedApisHtml}
             <ul class="details">
               ${(change.details ?? []).map((detail) => `<li>${escapeHtml(detail)}</li>`).join("")}
             </ul>
@@ -871,6 +899,16 @@ async function selectReport(file) {
   state.activeFile = file;
   renderReports();
   const report = await fetchJson(`/api/reports/${encodeURIComponent(file)}`);
+  
+  state.activeTargetSnapshot = null;
+  if (report.to?.id) {
+    try {
+      state.activeTargetSnapshot = await fetchJson(`/api/snapshots/${encodeURIComponent(report.to.id)}`);
+    } catch (e) {
+      console.error("Failed to load target snapshot details for report:", e);
+    }
+  }
+  
   renderReport(report);
 }
 
