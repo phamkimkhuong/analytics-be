@@ -714,11 +714,44 @@ function renderChanges(report) {
           `
           : "";
 
+        let titleHtml = "";
+        if (change.subject === "operation" && change.method && change.path) {
+          const methodLower = change.method.toLowerCase();
+          let actionText = "thay đổi";
+          if (change.kind === "operation_added") actionText = "thêm mới";
+          if (change.kind === "operation_removed") actionText = "xóa";
+          titleHtml = `
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+              <span class="method-badge ${methodLower}" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; min-width: 60px; text-align: center;">${escapeHtml(change.method)}</span>
+              <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13.5px; font-weight: 700; color: var(--text);">${escapeHtml(change.path)}</span>
+              <span class="muted" style="font-size: 12px; font-weight: normal;">(${actionText})</span>
+            </div>
+          `;
+        } else if (change.subject === "schema") {
+          let actionText = "thay đổi";
+          if (change.kind === "schema_added") actionText = "thêm mới";
+          if (change.kind === "schema_removed") actionText = "xóa";
+          titleHtml = `
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+              <span class="method-badge schema" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; min-width: 60px; text-align: center;">Schema</span>
+              <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13.5px; font-weight: 700; color: var(--text);">${escapeHtml(change.key)}</span>
+              <span class="muted" style="font-size: 12px; font-weight: normal;">(${actionText})</span>
+            </div>
+          `;
+        } else {
+          titleHtml = `
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+              <span class="method-badge schema" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; min-width: 60px; text-align: center; background: var(--violet);">Spec</span>
+              <span style="font-size: 13.5px; font-weight: 700; color: var(--text);">${escapeHtml(change.title)}</span>
+            </div>
+          `;
+        }
+
         return `
           <article class="change-card">
             <div class="change-head">
               <div>
-                <h4 class="change-title">${escapeHtml(change.title)}</h4>
+                ${titleHtml}
                 <div class="change-meta">
                   <span class="badge ${severityClass[change.severity]}">${escapeHtml(change.severity)}</span>
                   <span class="pill">${escapeHtml(severityMeaning[change.severity] ?? "")}</span>
