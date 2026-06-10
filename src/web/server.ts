@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { createSnapshot } from "../snapshot.js";
 import { loadSourcesConfig, resolveSource } from "../config.js";
 import { runDiff } from "../diff/index.js";
+import { loadSnapshotForDiff } from "../diff/snapshot.js";
+import { groupSnapshot } from "../grouping/apply.js";
+import { loadApiGroupsConfig } from "../grouping/config.js";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WEB_DIR = resolve(ROOT_DIR, "web");
@@ -309,6 +312,25 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
         "Cache-Control": "no-store",
       });
       response.end(await readFile(reportPath));
+    }
+    return;
+  }
+
+  if (request.method === "GET" && pathname.startsWith("/api/snapshots/")) {
+    try {
+      const snapshot_id = decodeURIComponent(pathname.slice("/api/snapshots/".length));
+      const snapshot = await loadSnapshotForDiff(snapshot_id, ROOT_DIR);
+      const groupsConfig = await loadApiGroupsConfig(resolve(ROOT_DIR, "config", "api-groups.json"));
+      const { operations, schemas } = groupSnapshot(snapshot, groupsConfig);
+
+      sendJson(response, 200, {
+        id: snapshot_id,
+        manifest: snapshot.manifest,
+        operations,
+        schemas,
+      });
+    } catch (err: any) {
+      sendJson(response, 500, { error: err.message });
     }
     return;
   }

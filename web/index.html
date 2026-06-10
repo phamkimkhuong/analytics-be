@@ -65,52 +65,88 @@
           </div>
         </section>
 
-        <section class="verdict" id="verdictPanel"></section>
+        <div id="reportViewContent">
+          <section class="verdict" id="verdictPanel"></section>
 
-        <section class="metric-grid" id="metricGrid"></section>
+          <section class="metric-grid" id="metricGrid"></section>
 
-        <section class="content-grid" id="contentGrid">
-          <div class="panel">
-            <div class="panel-header">
-              <h3>Nhóm bị ảnh hưởng</h3>
-              <span id="groupCount" class="muted"></span>
+          <section class="content-grid" id="contentGrid">
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Nhóm bị ảnh hưởng</h3>
+                <span id="groupCount" class="muted"></span>
+              </div>
+              <div id="groupList" class="group-list"></div>
             </div>
-            <div id="groupList" class="group-list"></div>
+
+            <div class="panel filters-panel" id="filtersPanel">
+              <div class="panel-header">
+                <h3>Lọc nâng cao</h3>
+                <button class="text-button" id="clearFiltersButton" type="button">Xóa lọc</button>
+              </div>
+              <div class="filters">
+                <label class="field-label" for="severityFilter">Mức ảnh hưởng</label>
+                <select id="severityFilter" class="input">
+                  <option value="">Tất cả mức</option>
+                  <option value="BREAKING">Nguy cơ vỡ app</option>
+                  <option value="REVIEW_REQUIRED">Cần rà soát</option>
+                  <option value="NON_BREAKING">Thường an toàn</option>
+                  <option value="DOC_ONLY">Chỉ tài liệu</option>
+                </select>
+
+                <label class="field-label" for="groupFilter">Nhóm</label>
+                <select id="groupFilter" class="input">
+                  <option value="">Tất cả nhóm</option>
+                </select>
+
+                <label class="field-label" for="changeSearch">Tìm kiếm</label>
+                <input id="changeSearch" class="input" type="search" autocomplete="off" placeholder="Endpoint, schema, field" />
+              </div>
+            </div>
+          </section>
+
+          <section class="panel changes-panel">
+              <div class="panel-header">
+              <h3>Chi tiết thay đổi</h3>
+              <span id="changeCount" class="muted"></span>
+            </div>
+            <div id="changeList" class="change-list"></div>
+          </section>
+        </div>
+
+        <div id="snapshotViewContent" style="display: none;">
+          <div class="panel-header" style="margin-bottom: 15px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; align-items: center; justify-content: space-between; box-shadow: var(--shadow);">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <button class="btn-export" id="closeSnapshotViewBtn" type="button" style="margin-top: 0; padding: 6px 12px;">← Quay lại</button>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <strong id="snapshotExplorerLabel" style="font-size: 15px; color: var(--text);">Bản chụp: -</strong>
+                <span id="snapshotExplorerStats" class="muted" style="font-size: 12px;">- API · - Schema · - Nhóm</span>
+              </div>
+            </div>
+            <span class="badge nonbreaking" style="background: rgba(37, 99, 235, 0.08); border-color: rgba(37, 99, 235, 0.2); color: var(--blue);">Chế độ duyệt bản chụp</span>
           </div>
 
-          <div class="panel filters-panel" id="filtersPanel">
-            <div class="panel-header">
-              <h3>Lọc nâng cao</h3>
-              <button class="text-button" id="clearFiltersButton" type="button">Xóa lọc</button>
+          <section class="content-grid" style="margin-top: 0;">
+            <div class="panel" style="display: flex; flex-direction: column; height: 680px;">
+              <div class="panel-header" style="margin-bottom: 8px;">
+                <h3>Thành phần của bản chụp</h3>
+              </div>
+              <div class="sidebar-section" style="margin-bottom: 10px; width: 100%;">
+                <input id="snapshotExplorerSearch" class="input" type="search" autocomplete="off" placeholder="Tìm kiếm API hoặc Schema..." />
+              </div>
+              <div id="snapshotExplorerList" class="group-list" style="overflow-y: auto; flex-grow: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 6px; max-height: 580px;">
+              </div>
             </div>
-            <div class="filters">
-              <label class="field-label" for="severityFilter">Mức ảnh hưởng</label>
-              <select id="severityFilter" class="input">
-                <option value="">Tất cả mức</option>
-                <option value="BREAKING">Nguy cơ vỡ app</option>
-                <option value="REVIEW_REQUIRED">Cần rà soát</option>
-                <option value="NON_BREAKING">Thường an toàn</option>
-                <option value="DOC_ONLY">Chỉ tài liệu</option>
-              </select>
 
-              <label class="field-label" for="groupFilter">Nhóm</label>
-              <select id="groupFilter" class="input">
-                <option value="">Tất cả nhóm</option>
-              </select>
-
-              <label class="field-label" for="changeSearch">Tìm kiếm</label>
-              <input id="changeSearch" class="input" type="search" autocomplete="off" placeholder="Endpoint, schema, field" />
+            <div class="panel" style="display: flex; flex-direction: column; height: 680px;">
+              <div class="panel-header" style="align-items: center; margin-bottom: 8px;">
+                <h3 id="snapshotDetailTitle" style="margin: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">Chi tiết API / Schema</h3>
+                <span id="snapshotDetailType" class="pill" style="display: none; font-size: 11px;"></span>
+              </div>
+              <pre id="snapshotDetailCode" style="margin: 0; background: #0f172a; color: #cbd5e1; padding: 12px; border-radius: 8px; overflow: auto; flex-grow: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--line); max-height: 600px;"></pre>
             </div>
-          </div>
-        </section>
-
-        <section class="panel changes-panel">
-            <div class="panel-header">
-            <h3>Chi tiết thay đổi</h3>
-            <span id="changeCount" class="muted"></span>
-          </div>
-          <div id="changeList" class="change-list"></div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
 

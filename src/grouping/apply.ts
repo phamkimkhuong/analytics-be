@@ -191,3 +191,51 @@ export function applyApiGroups(report: DiffReport, from: SnapshotForDiff, to: Sn
   report.summary.by_group = summarizeGroups(report.changes, config.fallback_group);
   return report;
 }
+
+export interface GroupedOperation {
+  key: string;
+  method: string;
+  path: string;
+  tags: string[];
+  operationId?: string;
+  contract: unknown;
+  groups: string[];
+}
+
+export interface GroupedSchema {
+  name: string;
+  contract: unknown;
+  groups: string[];
+}
+
+export function groupSnapshot(
+  snapshot: SnapshotForDiff,
+  apiGroupsConfig: ApiGroupsConfig
+): { operations: GroupedOperation[]; schemas: GroupedSchema[] } {
+  const config = normalizedConfig(apiGroupsConfig);
+  const schemaUsageGroups = schemaOperationGroups(snapshot, config);
+
+  const operations = [...snapshot.operations.values()].map((op) => {
+    const groups = operationGroups(op, config);
+    return {
+      key: op.key,
+      method: op.method,
+      path: op.path,
+      tags: op.tags,
+      operationId: op.operationId,
+      contract: op.contract,
+      groups: groups.length > 0 ? groups : [config.fallback_group],
+    };
+  });
+
+  const schemas = [...snapshot.schemas.values()].map((s) => {
+    const groups = schemaGroups(s.name, config, schemaUsageGroups);
+    return {
+      name: s.name,
+      contract: s.contract,
+      groups: groups.length > 0 ? groups : [config.fallback_group],
+    };
+  });
+
+  return { operations, schemas };
+}

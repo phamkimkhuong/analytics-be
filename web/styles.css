@@ -862,3 +862,57 @@ select {
   border-color: var(--blue);
   color: var(--blue);
 }
+
+/* Snapshot Explorer Styles */
+.snapshot-explorer-item {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px 12px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.snapshot-explorer-item:hover {
+  border-color: var(--blue);
+  background: var(--surface-2);
+}
+
+.snapshot-explorer-item.active {
+  border-color: var(--blue);
+  background: rgba(37, 99, 235, 0.1);
+  font-weight: 600;
+}
+
+.method-badge {
+  font-size: 9.5px;
+  font-weight: 750;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  color: #fff;
+  min-width: 55px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.method-badge.get { background: var(--blue); }
+.method-badge.post { background: var(--green); }
+.method-badge.put { background: var(--amber); }
+.method-badge.delete { background: var(--red); }
+.method-badge.patch { background: var(--violet); }
+.method-badge.schema { background: var(--muted); }
+
+.explorer-item-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -208,6 +208,26 @@ const els = {
   exportActions: document.querySelector("#exportActions"),
   exportMarkdownBtn: document.querySelector("#exportMarkdownBtn"),
   exportJsonBtn: document.querySelector("#exportJsonBtn"),
+  reportViewContent: document.querySelector("#reportViewContent"),
+  snapshotViewContent: document.querySelector("#snapshotViewContent"),
+  closeSnapshotViewBtn: document.querySelector("#closeSnapshotViewBtn"),
+  snapshotExplorerLabel: document.querySelector("#snapshotExplorerLabel"),
+  snapshotExplorerStats: document.querySelector("#snapshotExplorerStats"),
+  snapshotExplorerSearch: document.querySelector("#snapshotExplorerSearch"),
+  snapshotExplorerList: document.querySelector("#snapshotExplorerList"),
+  snapshotDetailTitle: document.querySelector("#snapshotDetailTitle"),
+  snapshotDetailType: document.querySelector("#snapshotDetailType"),
+  snapshotDetailCode: document.querySelector("#snapshotDetailCode"),
+  topbar: document.querySelector(".topbar"),
+};
+
+// Snapshot Explorer State
+const explorerState = {
+  snapshotId: "",
+  operations: [],
+  schemas: [],
+  activeItem: null,
+  searchQuery: "",
 };
 
 async function fetchJson(url) {
@@ -322,10 +342,17 @@ function renderSnapshots() {
       (snapshot) => {
         const isBaseline = snapshot.id === "20260609-ts-contract-baseline";
         const actionHtml = isBaseline
-          ? `<span class="baseline-tag">⭐ Bản chuẩn</span>`
+          ? `
+            <div class="snapshot-actions">
+              <span class="baseline-tag" style="margin-right: 4px;">⭐ Chuẩn</span>
+              <button class="text-button view-snapshot-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Xem API</button>
+            </div>
+          `
           : `
             <div class="snapshot-actions">
-              <button class="text-button set-baseline-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Đặt làm chuẩn</button>
+              <button class="text-button view-snapshot-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Xem API</button>
+              <span class="action-divider">|</span>
+              <button class="text-button set-baseline-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Mốc</button>
               <span class="action-divider">|</span>
               <button class="text-button delete-snapshot-btn" data-snapshot-id="${escapeHtml(snapshot.id)}" type="button">Xoá</button>
             </div>
@@ -344,6 +371,155 @@ function renderSnapshots() {
       }
     )
     .join("");
+}
+
+// Snapshot Explorer Functions
+async function showSnapshotExplorer(snapshotId) {
+  els.reportViewContent.style.display = "none";
+  els.snapshotViewContent.style.display = "block";
+  if (els.topbar) {
+    els.topbar.style.display = "none";
+  }
+
+  els.snapshotExplorerLabel.textContent = `Bản chụp: ${snapshotId}`;
+  els.snapshotExplorerStats.textContent = "Đang tải dữ liệu...";
+  els.snapshotExplorerList.innerHTML = `<div class="empty-state">Đang tải danh mục API...</div>`;
+  els.snapshotDetailTitle.textContent = "Chọn một API hoặc Schema để xem chi tiết";
+  els.snapshotDetailType.style.display = "none";
+  els.snapshotDetailCode.textContent = "";
+
+  try {
+    const data = await fetchJson(`/api/snapshots/${encodeURIComponent(snapshotId)}`);
+    explorerState.snapshotId = snapshotId;
+    explorerState.operations = data.operations || [];
+    explorerState.schemas = data.schemas || [];
+    explorerState.activeItem = null;
+    explorerState.searchQuery = "";
+    els.snapshotExplorerSearch.value = "";
+
+    const opCount = explorerState.operations.length;
+    const schemaCount = explorerState.schemas.length;
+    const tagCount = data.manifest?.openapi?.tag_count ?? 0;
+    els.snapshotExplorerStats.textContent = `${formatNumber(opCount)} API · ${formatNumber(schemaCount)} Schema · ${formatNumber(tagCount)} Nhóm`;
+
+    renderExplorerList();
+  } catch (error) {
+    els.snapshotExplorerStats.textContent = "Lỗi tải dữ liệu";
+    els.snapshotExplorerList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+function renderExplorerList() {
+  const query = explorerState.searchQuery.trim().toLowerCase();
+
+  const filteredOps = explorerState.operations.filter(op => {
+    return op.key.toLowerCase().includes(query) || op.path.toLowerCase().includes(query) || (op.tags && op.tags.some(t => t.toLowerCase().includes(query)));
+  });
+
+  const filteredSchemas = explorerState.schemas.filter(s => {
+    return s.name.toLowerCase().includes(query);
+  });
+
+  if (filteredOps.length === 0 && filteredSchemas.length === 0) {
+    els.snapshotExplorerList.innerHTML = `<div class="empty-state">Không tìm thấy API hoặc Schema nào khớp</div>`;
+    return;
+  }
+
+  const groupMap = {};
+
+  filteredOps.forEach(op => {
+    op.groups.forEach(g => {
+      groupMap[g] = groupMap[g] || { operations: [], schemas: [] };
+      groupMap[g].operations.push(op);
+    });
+  });
+
+  filteredSchemas.forEach(s => {
+    s.groups.forEach(g => {
+      groupMap[g] = groupMap[g] || { operations: [], schemas: [] };
+      groupMap[g].schemas.push(s);
+    });
+  });
+
+  const groupNames = Object.keys(groupMap).sort((a, b) => a.localeCompare(b));
+
+  let html = "";
+  groupNames.forEach(groupName => {
+    const groupData = groupMap[groupName];
+    const totalCount = groupData.operations.length + groupData.schemas.length;
+
+    html += `
+      <div class="explorer-group-container" style="margin-top: 10px; margin-bottom: 5px;">
+        <div class="field-label-small" style="margin-bottom: 6px; color: var(--blue); font-weight: 750;">
+          📂 ${escapeHtml(groupName)} (${totalCount})
+        </div>
+        <div class="explorer-group-items" style="display: flex; flex-direction: column; gap: 6px; padding-left: 8px;">
+    `;
+
+    if (groupData.operations.length > 0) {
+      html += groupData.operations.map(op => {
+        const isActive = explorerState.activeItem && explorerState.activeItem.type === "operation" && explorerState.activeItem.key === op.key;
+        const activeClass = isActive ? "active" : "";
+        const methodLower = op.method.toLowerCase();
+        return `
+          <button class="snapshot-explorer-item ${activeClass}" data-item-type="operation" data-item-key="${escapeHtml(op.key)}" type="button">
+            <span class="method-badge ${methodLower}">${escapeHtml(op.method)}</span>
+            <span class="explorer-item-path" title="${escapeHtml(op.path)}">${escapeHtml(op.path)}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    if (groupData.schemas.length > 0) {
+      html += groupData.schemas.map(s => {
+        const isActive = explorerState.activeItem && explorerState.activeItem.type === "schema" && explorerState.activeItem.key === s.name;
+        const activeClass = isActive ? "active" : "";
+        return `
+          <button class="snapshot-explorer-item ${activeClass}" data-item-type="schema" data-item-key="${escapeHtml(s.name)}" type="button">
+            <span class="method-badge schema">Schema</span>
+            <span class="explorer-item-path" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  els.snapshotExplorerList.innerHTML = html;
+}
+
+function selectExplorerItem(type, key) {
+  explorerState.activeItem = { type, key };
+
+  const buttons = els.snapshotExplorerList.querySelectorAll(".snapshot-explorer-item");
+  buttons.forEach(btn => {
+    const isTarget = btn.dataset.itemType === type && btn.dataset.itemKey === key;
+    btn.classList.toggle("active", isTarget);
+  });
+
+  if (type === "operation") {
+    const op = explorerState.operations.find(o => o.key === key);
+    if (op) {
+      els.snapshotDetailTitle.textContent = op.key;
+      els.snapshotDetailType.textContent = "Operation";
+      els.snapshotDetailType.className = "pill";
+      els.snapshotDetailType.style.display = "inline-flex";
+      els.snapshotDetailCode.textContent = JSON.stringify(op.contract, null, 2);
+    }
+  } else if (type === "schema") {
+    const s = explorerState.schemas.find(sch => sch.name === key);
+    if (s) {
+      els.snapshotDetailTitle.textContent = s.name;
+      els.snapshotDetailType.textContent = "Schema";
+      els.snapshotDetailType.className = "pill";
+      els.snapshotDetailType.style.display = "inline-flex";
+      els.snapshotDetailCode.textContent = JSON.stringify(s.contract, null, 2);
+    }
+  }
 }
 
 function metric(label, value, cls = "") {
@@ -751,6 +927,13 @@ els.runCompareButton.addEventListener("click", async () => {
 });
 
 els.snapshotList.addEventListener("click", async (event) => {
+  const viewBtn = event.target.closest(".view-snapshot-btn");
+  if (viewBtn) {
+    const snapshotId = viewBtn.dataset.snapshotId;
+    void showSnapshotExplorer(snapshotId);
+    return;
+  }
+
   const deleteBtn = event.target.closest(".delete-snapshot-btn");
   if (deleteBtn) {
     const snapshot_id = deleteBtn.dataset.snapshotId;
@@ -849,6 +1032,27 @@ els.exportJsonBtn.addEventListener("click", () => {
   if (!state.activeReport || !state.activeFile) return;
   const content = JSON.stringify(state.activeReport, null, 2);
   downloadFile(content, state.activeFile, "application/json");
+});
+
+els.closeSnapshotViewBtn.addEventListener("click", () => {
+  els.snapshotViewContent.style.display = "none";
+  els.reportViewContent.style.display = "block";
+  if (els.topbar) {
+    els.topbar.style.display = "flex";
+  }
+});
+
+els.snapshotExplorerSearch.addEventListener("input", (event) => {
+  explorerState.searchQuery = event.target.value;
+  renderExplorerList();
+});
+
+els.snapshotExplorerList.addEventListener("click", (event) => {
+  const btn = event.target.closest(".snapshot-explorer-item");
+  if (!btn) return;
+  const type = btn.dataset.itemType;
+  const key = btn.dataset.itemKey;
+  selectExplorerItem(type, key);
 });
 
 loadDashboard().catch((error) => {
