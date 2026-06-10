@@ -697,3 +697,168 @@ select {
   color: rgba(255, 255, 255, 0.2);
   font-size: 11px;
 }
+
+/* Visual Diff Viewer Styles */
+.toggle-diff-btn {
+  background: transparent;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.toggle-diff-btn:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
+.diff-viewer-wrapper {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0f172a;
+  color: #cbd5e1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11.5px;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+}
+
+.diff-viewer-wrapper.active {
+  display: flex;
+}
+
+.diff-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #1e293b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.diff-header-col {
+  padding: 8px 12px;
+}
+
+.diff-header-col:first-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.diff-body-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 380px;
+}
+
+.diff-pane {
+  overflow: auto;
+  height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.diff-pane:first-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.diff-lines {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diff-line {
+  display: table-row;
+  white-space: pre;
+  line-height: 1.6;
+}
+
+.diff-line-num {
+  display: table-cell;
+  width: 45px;
+  text-align: right;
+  padding-right: 12px;
+  color: #475569;
+  user-select: none;
+  background: #090d16;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding-left: 8px;
+}
+
+.diff-line-content {
+  display: table-cell;
+  padding-left: 12px;
+  word-break: break-all;
+}
+
+/* Row states */
+.diff-line.removed {
+  background: rgba(239, 68, 68, 0.12);
+}
+.diff-line.removed .diff-line-content {
+  color: #fca5a5;
+}
+.diff-line.removed .diff-line-num {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.diff-line.added {
+  background: rgba(34, 197, 94, 0.12);
+}
+.diff-line.added .diff-line-content {
+  color: #86efac;
+}
+.diff-line.added .diff-line-num {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.diff-line.empty {
+  background: rgba(255, 255, 255, 0.02);
+}
+.diff-line.empty .diff-line-num {
+  background: #090d16;
+  color: transparent;
+}
+
+/* Export Actions Styles */
+.export-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-export {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-export:hover {
+  background: var(--surface-2);
+  border-color: var(--blue);
+  color: var(--blue);
+}

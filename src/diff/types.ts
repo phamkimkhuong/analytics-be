@@ -71,6 +71,8 @@ export interface DiffChange {
   title: string;
   details: string[];
   schema_changes?: SchemaFieldChange[];
+  before?: unknown;
+  after?: unknown;
 }
 
 export interface SchemaFieldChange {

@@ -181,6 +181,8 @@ function describeOperationChange(from: OperationContract, to: OperationContract)
     tags: to.tags.length > 0 ? to.tags : from.tags,
     title: `${to.method} ${to.path} changed`,
     details,
+    before: from.contract,
+    after: to.contract,
   };
 }
 
@@ -204,6 +206,7 @@ function compareOperations(from: SnapshotForDiff, to: SnapshotForDiff): DiffChan
         tags: after.tags,
         title: `${after.method} ${after.path} added`,
         details: [`New endpoint under tags: ${after.tags.join(", ") || "(untagged)"}.`],
+        after: after.contract,
       });
       continue;
     }
@@ -220,6 +223,7 @@ function compareOperations(from: SnapshotForDiff, to: SnapshotForDiff): DiffChan
         tags: before.tags,
         title: `${before.method} ${before.path} removed`,
         details: ["Endpoint no longer exists in the target OpenAPI contract."],
+        before: before.contract,
       });
       continue;
     }
@@ -252,6 +256,7 @@ function compareSchemas(from: SnapshotForDiff, to: SnapshotForDiff): DiffChange[
         key: name,
         title: `Schema ${name} added`,
         details: ["New component schema exists in target snapshot."],
+        after: after.contract,
       });
       continue;
     }
@@ -265,6 +270,7 @@ function compareSchemas(from: SnapshotForDiff, to: SnapshotForDiff): DiffChange[
         key: name,
         title: `Schema ${name} removed`,
         details: ["Component schema no longer exists in target snapshot."],
+        before: before.contract,
       });
       continue;
     }

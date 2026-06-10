@@ -289,8 +289,10 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
 
   if (pathname.startsWith("/api/reports/")) {
     const file = basename(decodeURIComponent(pathname.slice("/api/reports/".length)));
-    if (!file.endsWith(".json")) {
-      sendJson(response, 400, { error: "Report file must be a .json file." });
+    const isJson = file.endsWith(".json");
+    const isMd = file.endsWith(".md");
+    if (!isJson && !isMd) {
+      sendJson(response, 400, { error: "Report file must be a .json or .md file." });
       return;
     }
     const reportPath = safeJoin(REPORTS_DIR, file);
@@ -298,7 +300,16 @@ async function handleApi(pathname: string, request: IncomingMessage, response: S
       sendJson(response, 400, { error: "Invalid report path." });
       return;
     }
-    sendJson(response, 200, await readJson(reportPath));
+    if (isJson) {
+      sendJson(response, 200, await readJson(reportPath));
+    } else {
+      response.writeHead(200, {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${file}"`,
+        "Cache-Control": "no-store",
+      });
+      response.end(await readFile(reportPath));
+    }
     return;
   }
 

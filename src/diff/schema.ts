@@ -329,5 +329,7 @@ export function describeDetailedSchemaChange(name: string, before: SchemaContrac
     title: `Schema ${name} changed`,
     details,
     schema_changes: schemaChanges,
+    before: before.contract,
+    after: after.contract,
   };
 }

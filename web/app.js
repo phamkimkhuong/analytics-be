@@ -11,6 +11,152 @@ const state = {
   },
 };
 
+// LCS Line Diffing Algorithm
+function diffLines(oldStr, newStr) {
+  const oldLines = oldStr ? oldStr.split("\n") : [];
+  const newLines = newStr ? newStr.split("\n") : [];
+  const M = oldLines.length;
+  const N = newLines.length;
+
+  const dp = Array.from({ length: M + 1 }, () => new Int32Array(N + 1));
+  for (let i = 1; i <= M; i++) {
+    for (let j = 1; j <= N; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  const result = [];
+  let i = M, j = N;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      result.push({ type: "equal", value: oldLines[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.push({ type: "added", value: newLines[j - 1] });
+      j--;
+    } else {
+      result.push({ type: "removed", value: oldLines[i - 1] });
+      i--;
+    }
+  }
+  return result.reverse();
+}
+
+function alignDiffs(diffResult) {
+  const left = [];
+  const right = [];
+
+  let i = 0;
+  while (i < diffResult.length) {
+    if (diffResult[i].type === "equal") {
+      left.push({ type: "equal", text: diffResult[i].value });
+      right.push({ type: "equal", text: diffResult[i].value });
+      i++;
+    } else {
+      const removals = [];
+      const additions = [];
+      while (i < diffResult.length && diffResult[i].type !== "equal") {
+        if (diffResult[i].type === "removed") {
+          removals.push(diffResult[i].value);
+        } else if (diffResult[i].type === "added") {
+          additions.push(diffResult[i].value);
+        }
+        i++;
+      }
+
+      const max = Math.max(removals.length, additions.length);
+      for (let k = 0; k < max; k++) {
+        if (k < removals.length && k < additions.length) {
+          left.push({ type: "removed", text: removals[k] });
+          right.push({ type: "added", text: additions[k] });
+        } else if (k < removals.length) {
+          left.push({ type: "removed", text: removals[k] });
+          right.push({ type: "empty", text: "" });
+        } else {
+          left.push({ type: "empty", text: "" });
+          right.push({ type: "added", text: additions[k] });
+        }
+      }
+    }
+  }
+
+  return { left, right };
+}
+
+function renderVisualDiff(changeId, wrapper) {
+  const change = state.activeReport?.changes?.find((c) => c.id === changeId);
+  if (!change) return;
+
+  const leftPane = wrapper.querySelector(".diff-left");
+  const rightPane = wrapper.querySelector(".diff-right");
+  const leftLinesContainer = leftPane.querySelector(".diff-lines");
+  const rightLinesContainer = rightPane.querySelector(".diff-lines");
+
+  const beforeStr = change.before ? JSON.stringify(change.before, null, 2) : "";
+  const afterStr = change.after ? JSON.stringify(change.after, null, 2) : "";
+
+  const rawDiff = diffLines(beforeStr, afterStr);
+  const { left, right } = alignDiffs(rawDiff);
+
+  let leftLineNum = 1;
+  const leftHtml = left
+    .map((line) => {
+      const isRemoved = line.type === "removed";
+      const isEmpty = line.type === "empty";
+      const lineClass = isRemoved ? "removed" : isEmpty ? "empty" : "";
+      const numStr = isEmpty ? "" : leftLineNum++;
+      return `
+        <div class="diff-line ${lineClass}">
+          <div class="diff-line-num">${numStr}</div>
+          <div class="diff-line-content">${escapeHtml(line.text)}</div>
+        </div>
+      `;
+    })
+    .join("");
+  leftLinesContainer.innerHTML = leftHtml;
+
+  let rightLineNum = 1;
+  const rightHtml = right
+    .map((line) => {
+      const isAdded = line.type === "added";
+      const isEmpty = line.type === "empty";
+      const lineClass = isAdded ? "added" : isEmpty ? "empty" : "";
+      const numStr = isEmpty ? "" : rightLineNum++;
+      return `
+        <div class="diff-line ${lineClass}">
+          <div class="diff-line-num">${numStr}</div>
+          <div class="diff-line-content">${escapeHtml(line.text)}</div>
+        </div>
+      `;
+    })
+    .join("");
+  rightLinesContainer.innerHTML = rightHtml;
+
+  let isSyncingLeftScroll = false;
+  let isSyncingRightScroll = false;
+  leftPane.onscroll = () => {
+    if (!isSyncingLeftScroll) {
+      isSyncingRightScroll = true;
+      rightPane.scrollTop = leftPane.scrollTop;
+      rightPane.scrollLeft = leftPane.scrollLeft;
+    }
+    isSyncingLeftScroll = false;
+  };
+  rightPane.onscroll = () => {
+    if (!isSyncingRightScroll) {
+      isSyncingLeftScroll = true;
+      leftPane.scrollTop = rightPane.scrollTop;
+      leftPane.scrollLeft = rightPane.scrollLeft;
+    }
+    isSyncingRightScroll = false;
+  };
+}
+
 const SHOW_FILTERS_THRESHOLD = 20;
 
 const severityClass = {
@@ -59,6 +205,9 @@ const els = {
   compareTo: document.querySelector("#compareTo"),
   runCompareButton: document.querySelector("#runCompareButton"),
   takeSnapshotButton: document.querySelector("#takeSnapshotButton"),
+  exportActions: document.querySelector("#exportActions"),
+  exportMarkdownBtn: document.querySelector("#exportMarkdownBtn"),
+  exportJsonBtn: document.querySelector("#exportJsonBtn"),
 };
 
 async function fetchJson(url) {
@@ -365,25 +514,51 @@ function renderChanges(report) {
 
   els.changeList.innerHTML = changes
     .map(
-      (change) => `
-        <article class="change-card">
-          <div class="change-head">
-            <div>
-              <h4 class="change-title">${escapeHtml(change.title)}</h4>
-              <div class="change-meta">
-                <span class="badge ${severityClass[change.severity]}">${escapeHtml(change.severity)}</span>
-                <span class="pill">${escapeHtml(severityMeaning[change.severity] ?? "")}</span>
-                <span class="pill">${escapeHtml(change.kind)}</span>
-                <span class="pill">${escapeHtml(change.subject)}</span>
-                ${(change.groups ?? []).map((group) => `<span class="pill">${escapeHtml(group)}</span>`).join("")}
+      (change) => {
+        const hasDiff = change.before !== undefined || change.after !== undefined;
+        const toggleBtnHtml = hasDiff
+          ? `
+            <button class="toggle-diff-btn" data-change-id="${escapeHtml(change.id)}" type="button">
+              <span>Visual Diff ⇆</span>
+            </button>
+            <div class="diff-viewer-wrapper" id="diff-wrapper-${escapeHtml(change.id)}">
+              <div class="diff-header-row">
+                <div class="diff-header-col">Bản cũ (Before)</div>
+                <div class="diff-header-col">Bản mới (After)</div>
+              </div>
+              <div class="diff-body-row">
+                <div class="diff-pane diff-left">
+                  <div class="diff-lines"></div>
+                </div>
+                <div class="diff-pane diff-right">
+                  <div class="diff-lines"></div>
+                </div>
               </div>
             </div>
-          </div>
-          <ul class="details">
-            ${(change.details ?? []).map((detail) => `<li>${escapeHtml(detail)}</li>`).join("")}
-          </ul>
-        </article>
-      `,
+          `
+          : "";
+
+        return `
+          <article class="change-card">
+            <div class="change-head">
+              <div>
+                <h4 class="change-title">${escapeHtml(change.title)}</h4>
+                <div class="change-meta">
+                  <span class="badge ${severityClass[change.severity]}">${escapeHtml(change.severity)}</span>
+                  <span class="pill">${escapeHtml(severityMeaning[change.severity] ?? "")}</span>
+                  <span class="pill">${escapeHtml(change.kind)}</span>
+                  <span class="pill">${escapeHtml(change.subject)}</span>
+                  ${(change.groups ?? []).map((group) => `<span class="pill">${escapeHtml(group)}</span>`).join("")}
+                </div>
+              </div>
+            </div>
+            <ul class="details">
+              ${(change.details ?? []).map((detail) => `<li>${escapeHtml(detail)}</li>`).join("")}
+            </ul>
+            ${toggleBtnHtml}
+          </article>
+        `;
+      }
     )
     .join("");
 }
@@ -417,6 +592,12 @@ function renderReport(report) {
   renderMetrics(report);
   renderGroups(report);
   renderChanges(report);
+
+  if (state.activeFile) {
+    els.exportActions.style.display = "flex";
+  } else {
+    els.exportActions.style.display = "none";
+  }
 }
 
 async function selectReport(file) {
@@ -623,6 +804,51 @@ els.snapshotList.addEventListener("click", async (event) => {
     button.textContent = originalText;
     button.disabled = false;
   }
+});
+
+els.changeList.addEventListener("click", (event) => {
+  const toggleBtn = event.target.closest(".toggle-diff-btn");
+  if (!toggleBtn) return;
+
+  const changeId = toggleBtn.dataset.changeId;
+  const wrapper = document.getElementById(`diff-wrapper-${changeId}`);
+  if (!wrapper) return;
+
+  const isActive = wrapper.classList.toggle("active");
+  if (isActive) {
+    toggleBtn.classList.add("active");
+    toggleBtn.querySelector("span").textContent = "Ẩn so sánh ⇆";
+
+    const leftLines = wrapper.querySelector(".diff-left .diff-lines");
+    if (!leftLines.children.length) {
+      renderVisualDiff(changeId, wrapper);
+    }
+  } else {
+    toggleBtn.classList.remove("active");
+    toggleBtn.querySelector("span").textContent = "Visual Diff ⇆";
+  }
+});
+
+function downloadFile(content, fileName, contentType) {
+  const a = document.createElement("a");
+  const file = new Blob([content], { type: contentType });
+  a.href = URL.createObjectURL(file);
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+els.exportMarkdownBtn.addEventListener("click", () => {
+  if (!state.activeFile) return;
+  const mdFile = state.activeFile.replace(/\.json$/, ".md");
+  const url = `/api/reports/${encodeURIComponent(mdFile)}`;
+  window.open(url, "_blank");
+});
+
+els.exportJsonBtn.addEventListener("click", () => {
+  if (!state.activeReport || !state.activeFile) return;
+  const content = JSON.stringify(state.activeReport, null, 2);
+  downloadFile(content, state.activeFile, "application/json");
 });
 
 loadDashboard().catch((error) => {
