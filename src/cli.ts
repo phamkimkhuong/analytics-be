@@ -15,9 +15,14 @@ function usage(): string {
   return [
     "Cách sử dụng:",
     "  analytics-be list                     Hiển thị danh sách các bản chụp và báo cáo hiện có.",
+    "  analytics-be web [tùy_chọn]           Khởi chạy giao diện Web Dashboard và tự động mở trình duyệt.",
     "  analytics-be snapshot [tùy_chọn]",
     "  analytics-be diff <bản_cũ> <bản_mới> [tùy_chọn]",
     "  analytics-be diff --from <bản_cũ> --to <bản_mới> [tùy_chọn]",
+    "",
+    "Tùy chọn lệnh web (Web Dashboard UI):",
+    "  --port <port>          Cổng lắng nghe của web server. Mặc định là 4627.",
+    "  --host <ip>            IP lắng nghe của web server. Mặc định là 127.0.0.1.",
     "",
     "Tùy chọn lệnh snapshot (Chụp OpenAPI contract):",
     "  --source <key>         Key nguồn trong config/sources.json. Mặc định là config.default.",
@@ -265,6 +270,24 @@ async function main(): Promise<void> {
 
   if (command === "list" || command === "ls") {
     await runListCommand();
+    return;
+  }
+
+  if (command === "web" || command === "ui") {
+    const portIndex = process.argv.indexOf("--port");
+    const port = portIndex >= 0 ? process.argv[portIndex + 1] : (process.env.PORT ?? "4627");
+    const hostIndex = process.argv.indexOf("--host");
+    const host = hostIndex >= 0 ? process.argv[hostIndex + 1] : (process.env.HOST ?? "127.0.0.1");
+
+    await import("./web/server.js");
+
+    const displayHost = host === "0.0.0.0" ? "localhost" : host;
+    const url = `http://${displayHost}:${port}`;
+    console.log(`Đang mở trình duyệt: ${url}`);
+
+    const { exec } = await import("node:child_process");
+    const cmd = process.platform === "win32" ? `start "" "${url}"` : process.platform === "darwin" ? `open "${url}"` : `xdg-open "${url}"`;
+    exec(cmd, () => {});
     return;
   }
 
