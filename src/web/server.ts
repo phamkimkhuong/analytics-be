@@ -50,6 +50,12 @@ function parsePort(): number {
   return port;
 }
 
+function parseHost(): string {
+  const index = process.argv.indexOf("--host");
+  const value = index >= 0 ? process.argv[index + 1] : process.env.HOST;
+  return value ?? "127.0.0.1";
+}
+
 function sendJson(response: ServerResponse, statusCode: number, value: unknown): void {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
@@ -378,10 +384,12 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
 }
 
 const port = parsePort();
+const host = parseHost();
 const server = createServer((request, response) => {
   void handleRequest(request, response);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Analytics BE UI: http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  const displayHost = host === "0.0.0.0" ? "localhost" : host;
+  console.log(`Analytics BE UI: http://${displayHost}:${port}`);
 });
