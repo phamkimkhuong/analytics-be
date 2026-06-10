@@ -218,6 +218,7 @@ const els = {
   snapshotDetailTitle: document.querySelector("#snapshotDetailTitle"),
   snapshotDetailType: document.querySelector("#snapshotDetailType"),
   snapshotDetailCode: document.querySelector("#snapshotDetailCode"),
+  snapshotDetailRelatedApis: document.querySelector("#snapshotDetailRelatedApis"),
   topbar: document.querySelector(".topbar"),
 };
 
@@ -492,6 +493,38 @@ function renderExplorerList() {
   els.snapshotExplorerList.innerHTML = html;
 }
 
+function findRelatedOperations(schemaName) {
+  const relatedSchemas = new Set([schemaName]);
+  let sizeBefore;
+  
+  do {
+    sizeBefore = relatedSchemas.size;
+    explorerState.schemas.forEach(s => {
+      if (relatedSchemas.has(s.name)) return;
+      const jsonStr = JSON.stringify(s.contract);
+      for (const refName of relatedSchemas) {
+        if (jsonStr.includes(`#/components/schemas/${refName}`)) {
+          relatedSchemas.add(s.name);
+          break;
+        }
+      }
+    });
+  } while (relatedSchemas.size > sizeBefore);
+
+  const ops = [];
+  explorerState.operations.forEach(op => {
+    const jsonStr = JSON.stringify(op.contract);
+    const isReferenced = Array.from(relatedSchemas).some(refName => {
+      return jsonStr.includes(`#/components/schemas/${refName}`);
+    });
+    if (isReferenced) {
+      ops.push(op);
+    }
+  });
+
+  return ops.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
+}
+
 function selectExplorerItem(type, key) {
   explorerState.activeItem = { type, key };
 
@@ -502,6 +535,7 @@ function selectExplorerItem(type, key) {
   });
 
   if (type === "operation") {
+    els.snapshotDetailRelatedApis.style.display = "none";
     const op = explorerState.operations.find(o => o.key === key);
     if (op) {
       els.snapshotDetailTitle.textContent = op.key;
@@ -518,6 +552,30 @@ function selectExplorerItem(type, key) {
       els.snapshotDetailType.className = "pill";
       els.snapshotDetailType.style.display = "inline-flex";
       els.snapshotDetailCode.textContent = JSON.stringify(s.contract, null, 2);
+
+      const relatedOps = findRelatedOperations(key);
+      if (relatedOps.length > 0) {
+        els.snapshotDetailRelatedApis.style.display = "block";
+        els.snapshotDetailRelatedApis.innerHTML = `
+          <div style="font-size: 11px; font-weight: 750; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Các API sử dụng Schema này:</div>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+            ${relatedOps.map(op => {
+              const methodLower = op.method.toLowerCase();
+              return `
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px;">
+                  <span class="method-badge ${methodLower}" style="font-size: 8.5px; padding: 1px 4px; min-width: 45px; text-align: center; height: 16px; line-height: 14px; flex-shrink: 0;">${escapeHtml(op.method)}</span>
+                  <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(op.path)}">${escapeHtml(op.path)}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      } else {
+        els.snapshotDetailRelatedApis.style.display = "block";
+        els.snapshotDetailRelatedApis.innerHTML = `
+          <div style="font-size: 11.5px; color: var(--muted);">Schema này chưa được sử dụng trực tiếp/gián tiếp bởi API nào.</div>
+        `;
+      }
     }
   }
 }
