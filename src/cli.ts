@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { dirname, resolve } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadSourcesConfig, resolveSource } from "./config.js";
 import { runDiff } from "./diff/index.js";
@@ -7,10 +8,13 @@ import { createSnapshot } from "./snapshot.js";
 import type { CliOptions, DiffCliOptions, ResolvedDiffCliOptions } from "./types.js";
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SNAPSHOTS_DIR = process.env.SNAPSHOTS_DIR ? resolve(process.env.SNAPSHOTS_DIR) : resolve(ROOT_DIR, "snapshots");
+const REPORTS_DIR = process.env.REPORTS_DIR ? resolve(process.env.REPORTS_DIR) : resolve(ROOT_DIR, "reports");
 
 function usage(): string {
   return [
     "Cách sử dụng:",
+    "  analytics-be list                     Hiển thị danh sách các bản chụp và báo cáo hiện có.",
     "  analytics-be snapshot [tùy_chọn]",
     "  analytics-be diff <bản_cũ> <bản_mới> [tùy_chọn]",
     "  analytics-be diff --from <bản_cũ> --to <bản_mới> [tùy_chọn]",
@@ -200,8 +204,69 @@ async function runDiffCommand(args: string[]): Promise<void> {
   console.log(JSON.stringify(summary, null, 2));
 }
 
+async function runListCommand(): Promise<void> {
+  const snapshotsDir = SNAPSHOTS_DIR;
+  const reportsDir = REPORTS_DIR;
+
+  console.log("\n📁 DANH SÁCH BẢN CHỤP (SNAPSHOTS):");
+  try {
+    const entries = await readdir(snapshotsDir, { withFileTypes: true });
+    const snapshotDirs = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((a, b) => b.localeCompare(a));
+
+    if (snapshotDirs.length === 0) {
+      console.log("  (Chưa có bản chụp nào)");
+    } else {
+      for (const name of snapshotDirs) {
+        let details = "";
+        try {
+          const manifestContent = await readFile(join(snapshotsDir, name, "manifest.json"), "utf8");
+          const manifest = JSON.parse(manifestContent);
+          const ops = manifest.openapi?.operation_count ?? 0;
+          const schemas = manifest.openapi?.schema_count ?? 0;
+          details = ` (${ops} API · ${schemas} Schema)`;
+        } catch {}
+        console.log(`  ⭐ ${name}${details}`);
+      }
+    }
+  } catch {
+    console.log("  (Không thể đọc thư mục snapshots)");
+  }
+
+  console.log("\n📊 DANH SÁCH BÁO CÁO (REPORTS):");
+  try {
+    const entries = await readdir(reportsDir, { withFileTypes: true });
+    const reportFiles = entries
+      .filter((entry) => entry.isFile() && (entry.name.endsWith(".json") || entry.name.endsWith(".md")))
+      .map((entry) => entry.name)
+      .sort((a, b) => b.localeCompare(a));
+
+    if (reportFiles.length === 0) {
+      console.log("  (Chưa có báo cáo nào)");
+    } else {
+      const uniqueReports = new Set<string>();
+      reportFiles.forEach(f => {
+        uniqueReports.add(f.replace(/\.(json|md)$/, ""));
+      });
+      for (const base of Array.from(uniqueReports)) {
+        console.log(`  📝 ${base}`);
+      }
+    }
+  } catch {
+    console.log("  (Không thể đọc thư mục reports)");
+  }
+  console.log("");
+}
+
 async function main(): Promise<void> {
   const [command = "help", ...args] = process.argv.slice(2);
+
+  if (command === "list" || command === "ls") {
+    await runListCommand();
+    return;
+  }
 
   if (command === "snapshot") {
     await runSnapshot(args);
